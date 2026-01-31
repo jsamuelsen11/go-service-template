@@ -6,7 +6,7 @@
 repos:
   # Standard hooks
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
@@ -31,10 +31,10 @@ repos:
 
   # Go linting and formatting (uses project .golangci.yml)
   - repo: https://github.com/golangci/golangci-lint
-    rev: v1.62.2
+    rev: v2.7.2
     hooks:
       - id: golangci-lint
-        args: [--fix, --timeout=5m]
+        args: [--config=.golangci.yml, --fix, --timeout=5m]
 
   # Prettier - format non-Go files (yaml, json, markdown, toml, etc.)
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -50,7 +50,7 @@ repos:
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
-    rev: v0.42.0
+    rev: v0.47.0
     hooks:
       - id: markdownlint
         args: [--fix]
@@ -58,22 +58,22 @@ repos:
 
   # YAML linting (semantic checks beyond formatting)
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.35.1
+    rev: v1.37.1
     hooks:
       - id: yamllint
         args: [-d, "{extends: relaxed, rules: {line-length: {max: 120}}}"]
 
   # Shell script linting
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
 
   # Dockerfile linting
   - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
+    rev: v2.14.0
     hooks:
-      - id: hadolint
+      - id: hadolint-docker
 
   # GitHub Actions workflow linting
   - repo: https://github.com/rhysd/actionlint
@@ -103,3 +103,9 @@ repos:
     rev: v1.27.3
     hooks:
       - id: typos
+
+  # Gitleaks - detect secrets in code
+  - repo: https://github.com/zricethezav/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
