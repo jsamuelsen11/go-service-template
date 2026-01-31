@@ -1,0 +1,115 @@
+# golangci-lint configuration for enterprise-grade Go projects
+# Run with: golangci-lint run ./...
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+linters:
+  enable:
+    # Default linters (explicitly listed for clarity)
+    - errcheck      # Check error returns are handled
+    - gosimple      # Simplification suggestions
+    - govet         # Go vet checks (shadow, printf, etc.)
+    - ineffassign   # Detect ineffective assignments
+    - staticcheck   # Comprehensive static analysis
+    - unused        # Find unused code
+
+    # Formatting
+    - goimports     # Formatting + import organization (superset of gofmt)
+
+    # Additional strict linters
+    - bodyclose     # Check HTTP response body is closed
+    - dupl          # Code duplication detection
+    - exhaustive    # Check exhaustiveness of enum switch statements
+    - gocritic      # Opinionated Go linter with many checks
+    - gocyclo       # Cyclomatic complexity
+    - gosec         # Security checks (G101, G201, etc.)
+    - misspell      # Spell checking in comments and strings
+    - noctx         # HTTP requests without context.Context
+    - prealloc      # Slice preallocation hints
+    - revive        # Fast, configurable linter (replaces golint)
+    - unconvert     # Remove unnecessary type conversions
+    - unparam       # Find unused function parameters
+    - wastedassign  # Find wasted assignments
+
+linters-settings:
+  errcheck:
+    # Check type assertions (require ok check)
+    check-type-assertions: true
+    # Check blank identifier assignments
+    check-blank: true
+
+  gocritic:
+    enabled-tags:
+      - diagnostic
+      - style
+      - performance
+    disabled-checks:
+      - whyNoLint  # Allow nolint without explanation in some cases
+
+  gocyclo:
+    # Complexity threshold - 15 is reasonable for most functions
+    min-complexity: 15
+
+  dupl:
+    # Tokens threshold for duplication detection
+    threshold: 100
+
+  gosec:
+    excludes:
+      - G104  # Audit errors not checked (covered by errcheck)
+
+  misspell:
+    locale: US
+
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: error-naming
+      - name: exported
+      - name: if-return
+      - name: increment-decrement
+      - name: var-naming
+      - name: var-declaration
+      - name: package-comments
+      - name: range
+      - name: receiver-naming
+      - name: time-naming
+      - name: unexported-return
+      - name: indent-error-flow
+      - name: errorf
+      - name: empty-block
+      - name: superfluous-else
+      - name: unused-parameter
+      - name: unreachable-code
+
+issues:
+  # Maximum issues per linter (0 = unlimited)
+  max-issues-per-linter: 0
+  # Maximum same issues (0 = unlimited)
+  max-same-issues: 0
+
+  exclude-rules:
+    # Exclude some linters from running on test files
+    - path: _test\.go
+      linters:
+        - dupl
+        - gocritic
+        - gosec
+
+    # Exclude shadow check for err variable (common pattern)
+    - linters:
+        - govet
+      text: 'shadow: declaration of "err"'
+
+    # Allow longer functions in test files
+    - path: _test\.go
+      linters:
+        - gocyclo
