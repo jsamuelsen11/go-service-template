@@ -27,6 +27,15 @@ go.work.sum
 # env file
 .env
 
+# serena
+serana/
+
+# temp dirs
+.tmp/
+tmp/
+.temp/
+temp/
+
 # Editor/IDE
 # .idea/
 # .vscode/
