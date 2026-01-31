@@ -108,6 +108,11 @@ func (s *Service) ProcessExample(ctx context.Context, id string) (*ports.Example
 
 // GetExample retrieves an entity by ID.
 func (s *Service) GetExample(ctx context.Context, id string) (*ports.ExampleEntity, error) {
+	// Validate input.
+	if id == "" {
+		return nil, fmt.Errorf("validating input: %w", domain.NewValidationError("id", "cannot be empty"))
+	}
+
 	logger := logging.FromContext(ctx)
 	if logger == nil {
 		logger = s.logger
@@ -124,23 +129,23 @@ func (s *Service) GetExample(ctx context.Context, id string) (*ports.ExampleEnti
 }
 
 // DeleteExample removes an entity by ID.
+// Returns domain.ErrNotFound if the entity does not exist.
 func (s *Service) DeleteExample(ctx context.Context, id string) error {
+	// Validate input.
+	if id == "" {
+		return fmt.Errorf("validating input: %w", domain.NewValidationError("id", "cannot be empty"))
+	}
+
 	logger := logging.FromContext(ctx)
 	if logger == nil {
 		logger = s.logger
 	}
 
 	logger = logger.With(slog.String("method", "DeleteExample"), slog.String("id", id))
-
-	// Validate entity exists before deleting.
-	_, err := s.repo.GetByID(ctx, id)
-	if err != nil {
-		return fmt.Errorf("checking example exists: %w", err)
-	}
-
 	logger.InfoContext(ctx, "deleting entity")
 
-	err = s.repo.Delete(ctx, id)
+	// Delete directly - repo returns ErrNotFound if entity doesn't exist.
+	err := s.repo.Delete(ctx, id)
 	if err != nil {
 		return fmt.Errorf("deleting example: %w", err)
 	}

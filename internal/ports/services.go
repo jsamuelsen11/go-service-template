@@ -12,6 +12,7 @@ package ports
 
 import (
 	"context"
+	"time"
 )
 
 // ExampleRepository demonstrates the port pattern for data persistence.
@@ -94,7 +95,7 @@ type Cache interface {
 
 	// Set stores a value in the cache with optional TTL.
 	// A TTL of 0 means no expiration.
-	Set(ctx context.Context, key string, value []byte, ttlSeconds int) error
+	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
 
 	// Delete removes a value from the cache.
 	// Does not return an error if the key does not exist.

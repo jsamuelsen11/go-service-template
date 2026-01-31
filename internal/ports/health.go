@@ -2,9 +2,15 @@ package ports
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"sync"
 	"time"
 )
+
+// ErrDuplicateChecker is returned when attempting to register a health checker
+// with a name that is already registered.
+var ErrDuplicateChecker = errors.New("duplicate health checker")
 
 // HealthChecker is implemented by components that can report their health.
 // Adapters register themselves with the HealthRegistry at startup.
@@ -34,8 +40,9 @@ type HealthChecker interface {
 // runs all checks when queried.
 type HealthRegistry interface {
 	// Register adds a health checker to the registry.
+	// Returns an error if a checker with the same name is already registered.
 	// Should be called during application startup.
-	Register(checker HealthChecker)
+	Register(checker HealthChecker) error
 
 	// CheckAll runs all registered health checks and returns aggregated results.
 	// Checks run concurrently with the provided context timeout.
@@ -48,9 +55,6 @@ type HealthStatus string
 const (
 	// HealthStatusHealthy indicates all checks passed.
 	HealthStatusHealthy HealthStatus = "healthy"
-
-	// HealthStatusDegraded indicates some non-critical checks failed.
-	HealthStatusDegraded HealthStatus = "degraded"
 
 	// HealthStatusUnhealthy indicates critical checks failed.
 	HealthStatusUnhealthy HealthStatus = "unhealthy"
@@ -94,11 +98,21 @@ func NewHealthRegistry() *DefaultHealthRegistry {
 }
 
 // Register adds a health checker to the registry.
-func (r *DefaultHealthRegistry) Register(checker HealthChecker) {
+// Returns an error if a checker with the same name is already registered.
+func (r *DefaultHealthRegistry) Register(checker HealthChecker) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
+	name := checker.Name()
+	for _, c := range r.checkers {
+		if c.Name() == name {
+			return fmt.Errorf("%w: %s", ErrDuplicateChecker, name)
+		}
+	}
+
 	r.checkers = append(r.checkers, checker)
+
+	return nil
 }
 
 // CheckAll runs all registered health checks concurrently.

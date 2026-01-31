@@ -85,7 +85,7 @@ func ProcessWithWorkers(ctx context.Context, items []string) error {
 
     // Start workers
     const numWorkers = 5
-    for range numWorkers {
+    for i := 0; i < numWorkers; i++ {
         g.Go(func() error {
             for item := range itemChan {
                 if err := process(ctx, item); err != nil {

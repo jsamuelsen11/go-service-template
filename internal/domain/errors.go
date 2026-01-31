@@ -86,7 +86,6 @@ func NewConflictErrorWithDetails(entity, reason, details string) error {
 type ValidationError struct {
 	Field   string
 	Message string
-	Value   any
 }
 
 // Error implements the error interface.
@@ -106,11 +105,6 @@ func (e *ValidationError) Unwrap() error {
 // NewValidationError creates a validation error with context.
 func NewValidationError(field, message string) error {
 	return &ValidationError{Field: field, Message: message}
-}
-
-// NewValidationErrorWithValue creates a validation error including the invalid value.
-func NewValidationErrorWithValue(field, message string, value any) error {
-	return &ValidationError{Field: field, Message: message, Value: value}
 }
 
 // ForbiddenError provides context for forbidden errors.
