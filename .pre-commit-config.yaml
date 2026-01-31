@@ -46,7 +46,7 @@ repos:
           - json
           - markdown
           - toml
-        exclude: ^\.github/.*$  # GitHub Actions have specific formatting
+        exclude: ^\.github/.*$ # GitHub Actions have specific formatting
 
   # Markdown linting
   - repo: https://github.com/igorshubovych/markdownlint-cli
@@ -87,13 +87,15 @@ repos:
       - id: taplo-format
       - id: taplo-lint
 
-  # Spectral - OpenAPI/AsyncAPI linting
-  - repo: https://github.com/stoplightio/spectral
-    rev: v6.14.1
+  # Spectral - OpenAPI/AsyncAPI linting (local hook, requires: npm install -g @stoplight/spectral-cli)
+  - repo: local
     hooks:
       - id: spectral
-        args: [lint, --fail-severity=warn]
+        name: Spectral OpenAPI lint
+        entry: spectral lint --fail-severity=warn
+        language: system
         files: ^api/.*\.(yaml|yml|json)$
+        pass_filenames: true
 
   # Typos - fast spell checker for code
   - repo: https://github.com/crate-ci/typos

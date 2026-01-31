@@ -31,6 +31,7 @@ tasks:
       - go install github.com/cucumber/godog/cmd/godog@latest
       - go install golang.org/x/vuln/cmd/govulncheck@latest
       - go install github.com/air-verse/air@latest
+      - npm install -g @stoplight/spectral-cli
       - echo "Run 'prek install' to set up git hooks"
 
   run:
