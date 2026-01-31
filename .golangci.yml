@@ -9,30 +9,30 @@ run:
 linters:
   enable:
     # Default linters (explicitly listed for clarity)
-    - errcheck      # Check error returns are handled
-    - gosimple      # Simplification suggestions
-    - govet         # Go vet checks (shadow, printf, etc.)
-    - ineffassign   # Detect ineffective assignments
-    - staticcheck   # Comprehensive static analysis
-    - unused        # Find unused code
+    - errcheck # Check error returns are handled
+    - gosimple # Simplification suggestions
+    - govet # Go vet checks (shadow, printf, etc.)
+    - ineffassign # Detect ineffective assignments
+    - staticcheck # Comprehensive static analysis
+    - unused # Find unused code
 
     # Formatting
-    - goimports     # Formatting + import organization (superset of gofmt)
+    - goimports # Formatting + import organization (superset of gofmt)
 
     # Additional strict linters
-    - bodyclose     # Check HTTP response body is closed
-    - dupl          # Code duplication detection
-    - exhaustive    # Check exhaustiveness of enum switch statements
-    - gocritic      # Opinionated Go linter with many checks
-    - gocyclo       # Cyclomatic complexity
-    - gosec         # Security checks (G101, G201, etc.)
-    - misspell      # Spell checking in comments and strings
-    - noctx         # HTTP requests without context.Context
-    - prealloc      # Slice preallocation hints
-    - revive        # Fast, configurable linter (replaces golint)
-    - unconvert     # Remove unnecessary type conversions
-    - unparam       # Find unused function parameters
-    - wastedassign  # Find wasted assignments
+    - bodyclose # Check HTTP response body is closed
+    - dupl # Code duplication detection
+    - exhaustive # Check exhaustiveness of enum switch statements
+    - gocritic # Opinionated Go linter with many checks
+    - gocyclo # Cyclomatic complexity
+    - gosec # Security checks (G101, G201, etc.)
+    - misspell # Spell checking in comments and strings
+    - noctx # HTTP requests without context.Context
+    - prealloc # Slice preallocation hints
+    - revive # Fast, configurable linter (replaces golint)
+    - unconvert # Remove unnecessary type conversions
+    - unparam # Find unused function parameters
+    - wastedassign # Find wasted assignments
 
 linters-settings:
   errcheck:
@@ -47,7 +47,7 @@ linters-settings:
       - style
       - performance
     disabled-checks:
-      - whyNoLint  # Allow nolint without explanation in some cases
+      - whyNoLint # Allow nolint without explanation in some cases
 
   gocyclo:
     # Complexity threshold - 15 is reasonable for most functions
@@ -59,7 +59,7 @@ linters-settings:
 
   gosec:
     excludes:
-      - G104  # Audit errors not checked (covered by errcheck)
+      - G104 # Audit errors not checked (covered by errcheck)
 
   misspell:
     locale: US

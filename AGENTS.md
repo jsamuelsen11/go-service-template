@@ -19,6 +19,7 @@
 **NEVER skip this.** Work is not done until pushed.
 
 ## Core Rules
+
 - Track strategic work in beads (multi-session, dependencies, discovered work)
 - Use `bd create` for issues, TodoWrite for simple single-session execution
 - When in doubt, prefer bd—persistence you don't need beats lost context
@@ -28,12 +29,14 @@
 ## Essential Commands
 
 ### Finding Work
+
 - `bd ready` - Show issues ready to work (no blockers)
 - `bd list --status=open` - All open issues
 - `bd list --status=in_progress` - Your active work
 - `bd show <id>` - Detailed issue view with dependencies
 
 ### Creating & Updating
+
 - `bd create --title="..." --type=task|bug|feature --priority=2` - New issue
   - Priority: 0-4 or P0-P4 (0=critical, 2=medium, 4=backlog). NOT "high"/"medium"/"low"
 - `bd update <id> --status=in_progress` - Claim work
@@ -46,21 +49,25 @@
 - **WARNING**: Do NOT use `bd edit` - it opens $EDITOR (vim/nano) which blocks agents
 
 ### Dependencies & Blocking
+
 - `bd dep add <issue> <depends-on>` - Add dependency (issue depends on depends-on)
 - `bd blocked` - Show all blocked issues
 - `bd show <id>` - See what's blocking/blocked by this issue
 
 ### Sync & Collaboration
+
 - `bd sync` - Sync with git remote (run at session end)
 - `bd sync --status` - Check sync status without syncing
 
 ### Project Health
+
 - `bd stats` - Project statistics (open/closed/blocked counts)
 - `bd doctor` - Check for issues (sync problems, missing hooks)
 
 ## Common Workflows
 
 **Starting work:**
+
 ```bash
 bd ready           # Find available work
 bd show <id>       # Review issue details
@@ -68,12 +75,14 @@ bd update <id> --status=in_progress  # Claim it
 ```
 
 **Completing work:**
+
 ```bash
 bd close <id1> <id2> ...    # Close all completed issues at once
 bd sync                     # Push to remote
 ```
 
 **Creating dependent work:**
+
 ```bash
 # Run bd create commands in parallel (use subagents for many items)
 bd create --title="Implement feature X" --type=feature

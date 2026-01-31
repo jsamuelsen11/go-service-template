@@ -54,6 +54,7 @@ repos:
     hooks:
       - id: markdownlint
         args: [--fix]
+        exclude: ^(\.beads/|AGENTS\.md)
 
   # YAML linting (semantic checks beyond formatting)
   - repo: https://github.com/adrienverge/yamllint
