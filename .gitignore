@@ -40,3 +40,9 @@ temp/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Beads export state
+.beads/export-state/
+
+# Node modules (for local tooling like prettier/spectral)
+node_modules/
