@@ -26,6 +26,7 @@ go.work.sum
 
 # env file
 .env
+!.env.example
 
 # serena
 serana/
@@ -39,3 +40,9 @@ temp/
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Beads export state
+.beads/export-state/
+
+# Node modules (for local tooling like prettier/spectral)
+node_modules/
