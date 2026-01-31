@@ -1,0 +1,19 @@
+# Production environment configuration
+# Strict timeouts, warn-level logging, telemetry enabled
+
+app:
+  environment: prod
+
+log:
+  level: warn
+
+server:
+  read_timeout: 15s
+  write_timeout: 15s
+  idle_timeout: 60s
+  shutdown_timeout: 30s
+
+telemetry:
+  enabled: true
+  endpoint: http://otel-collector.prod:4317
+  sampling_rate: 0.1 # Sample 10% of traces in production

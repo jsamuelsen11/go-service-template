@@ -1,0 +1,35 @@
+# Base configuration - sensible defaults for all environments
+# Profile-specific configs override these values
+
+app:
+  name: go-service-template
+  version: dev
+
+server:
+  port: 8080
+  host: 0.0.0.0
+  read_timeout: 30s
+  write_timeout: 30s
+  idle_timeout: 120s
+  shutdown_timeout: 10s
+  max_request_size: 1048576 # 1MB
+
+log:
+  level: info
+  format: json
+
+telemetry:
+  enabled: false
+  endpoint: ""
+  service_name: go-service-template
+  sampling_rate: 1.0
+
+auth:
+  enabled: false
+  jwks_endpoint: ""
+  issuer: ""
+  audience: ""
+  claims_header: X-User-Claims
+  roles_header: X-User-Roles
+  scopes_header: X-User-Scopes
+  subject_header: X-User-ID

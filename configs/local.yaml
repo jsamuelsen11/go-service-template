@@ -1,0 +1,13 @@
+# Local development configuration
+# Human-readable logs, relaxed timeouts, telemetry disabled
+
+app:
+  environment: local
+
+log:
+  level: debug
+  format: text
+
+server:
+  read_timeout: 60s
+  write_timeout: 60s

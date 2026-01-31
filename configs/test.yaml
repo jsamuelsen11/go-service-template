@@ -1,0 +1,12 @@
+# Test environment configuration
+# Minimal config for automated tests
+
+app:
+  environment: test
+
+log:
+  level: error
+  format: text
+
+telemetry:
+  enabled: false

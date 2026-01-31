@@ -1,0 +1,11 @@
+# Development environment configuration
+
+app:
+  environment: dev
+
+log:
+  level: info
+
+telemetry:
+  enabled: true
+  endpoint: http://otel-collector.dev:4317
