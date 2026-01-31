@@ -1,0 +1,11 @@
+# QA environment configuration
+
+app:
+  environment: qa
+
+log:
+  level: info
+
+telemetry:
+  enabled: true
+  endpoint: http://otel-collector.qa:4317
