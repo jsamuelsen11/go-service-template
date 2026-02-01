@@ -73,7 +73,7 @@ pre-push:
   commands:
     go-test:
       glob: "*.go"
-      run: go test ./...
+      run: go tool gotestsum --format ${TEST_FORMAT:-testdox} -- ./...
 
     go-build:
       glob: "*.go"
