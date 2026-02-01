@@ -1,7 +1,13 @@
 // Package dto provides Data Transfer Objects for HTTP request/response handling.
 package dto
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/jsamuelsen/go-service-template/internal/domain"
+)
 
 // ErrorResponse is the standard error envelope for all error responses.
 // It provides a consistent structure for API error handling.
@@ -100,4 +106,67 @@ func HTTPStatusFromCode(code string) int {
 	default:
 		return http.StatusInternalServerError
 	}
+}
+
+// GetTraceID extracts the trace ID from the Gin context.
+// Returns empty string if not found.
+func GetTraceID(c *gin.Context) string {
+	if traceID, exists := c.Get("trace_id"); exists {
+		if s, ok := traceID.(string); ok {
+			return s
+		}
+	}
+	// Fallback to X-Request-ID header
+	return c.GetHeader("X-Request-ID")
+}
+
+// HandleError maps domain errors to HTTP error responses and sends them.
+// This centralizes error handling and ensures consistent error responses.
+func HandleError(c *gin.Context, err error) {
+	traceID := GetTraceID(c)
+
+	var statusCode int
+	var code string
+	var message string
+
+	switch {
+	case domain.IsNotFound(err):
+		statusCode = http.StatusNotFound
+		code = ErrorCodeNotFound
+		message = err.Error()
+
+	case domain.IsConflict(err):
+		statusCode = http.StatusConflict
+		code = ErrorCodeConflict
+		message = err.Error()
+
+	case domain.IsValidation(err):
+		statusCode = http.StatusBadRequest
+		code = ErrorCodeValidation
+		message = err.Error()
+
+	case domain.IsForbidden(err):
+		statusCode = http.StatusForbidden
+		code = ErrorCodeForbidden
+		message = err.Error()
+
+	case domain.IsUnavailable(err):
+		statusCode = http.StatusServiceUnavailable
+		code = ErrorCodeUnavailable
+		message = "Service temporarily unavailable"
+
+	default:
+		// Don't leak internal error details
+		statusCode = http.StatusInternalServerError
+		code = ErrorCodeInternal
+		message = "An internal error occurred"
+	}
+
+	c.JSON(statusCode, &ErrorResponse{
+		Error: ErrorDetail{
+			Code:    code,
+			Message: message,
+		},
+		TraceID: traceID,
+	})
 }

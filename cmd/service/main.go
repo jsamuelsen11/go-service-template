@@ -10,8 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/jsamuelsen/go-service-template/internal/adapters/clients"
+	"github.com/jsamuelsen/go-service-template/internal/adapters/clients/acl"
 	"github.com/jsamuelsen/go-service-template/internal/adapters/http"
 	"github.com/jsamuelsen/go-service-template/internal/adapters/http/handlers"
+	"github.com/jsamuelsen/go-service-template/internal/app"
 	"github.com/jsamuelsen/go-service-template/internal/platform/config"
 	"github.com/jsamuelsen/go-service-template/internal/platform/logging"
 	"github.com/jsamuelsen/go-service-template/internal/platform/telemetry"
@@ -94,26 +97,59 @@ func run() error {
 	// 5. Create health registry
 	healthRegistry := ports.NewHealthRegistry()
 
-	// 6. Create health handler with build info
+	// 6. Create HTTP client for downstream services
+	httpClient, err := clients.New(&clients.Config{
+		BaseURL:     "https://api.quotable.io",
+		ServiceName: "quote-service",
+		Timeout:     cfg.Client.Timeout,
+		Retry:       cfg.Client.Retry,
+		Circuit:     cfg.Client.CircuitBreaker,
+		Logger:      logger,
+	})
+	if err != nil {
+		return fmt.Errorf("creating HTTP client: %w", err)
+	}
+
+	// 7. Create quote client adapter (ACL pattern)
+	quoteClient := acl.NewQuoteClient(acl.QuoteClientConfig{
+		Client: httpClient,
+		Logger: logger,
+	})
+
+	// Register quote client as a health checker
+	if err := healthRegistry.Register(quoteClient); err != nil {
+		return fmt.Errorf("registering quote client health check: %w", err)
+	}
+
+	// 8. Create quote service (application layer)
+	quoteService := app.NewQuoteService(app.QuoteServiceConfig{
+		QuoteClient: quoteClient,
+		Logger:      logger,
+	})
+
+	// 9. Create handlers
 	buildInfo := handlers.NewBuildInfo(Version, Commit, BuildTime)
 	healthHandler := handlers.NewHealthHandler(healthRegistry, buildInfo)
+	quoteHandler := handlers.NewQuoteHandler(quoteService)
 
-	// 7. Create HTTP server
+	// 10. Create HTTP server
 	server := http.New(&cfg.Server, logger)
 
-	// 8. Setup router with all middleware and routes
-	routerCfg := http.NewDefaultRouterConfig(
-		logger,
-		&cfg.App,
-		&cfg.Auth,
-		healthHandler,
-	)
+	// 11. Setup router with all middleware and routes
+	routerCfg := http.RouterConfig{
+		Logger:        logger,
+		AuthConfig:    &cfg.Auth,
+		AppConfig:     &cfg.App,
+		HealthHandler: healthHandler,
+		QuoteHandler:  quoteHandler,
+		Timeout:       http.DefaultRequestTimeout,
+	}
 	http.SetupRouter(server.Engine(), routerCfg)
 
-	// 9. Start server (non-blocking)
+	// 12. Start server (non-blocking)
 	serverErr := server.Start()
 
-	// 10. Wait for shutdown signal
+	// 13. Wait for shutdown signal
 	return waitForShutdown(ctx, logger, server, serverErr, cfg.Server.ShutdownTimeout)
 }
 

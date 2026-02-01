@@ -29,6 +29,9 @@ type RouterConfig struct {
 	// HealthHandler handles health check endpoints.
 	HealthHandler *handlers.HealthHandler
 
+	// QuoteHandler handles quote endpoints (optional).
+	QuoteHandler *handlers.QuoteHandler
+
 	// Timeout is the default request timeout.
 	Timeout time.Duration
 }
@@ -73,6 +76,11 @@ func SetupRouter(engine *gin.Engine, cfg RouterConfig) {
 // setupAPIRoutes registers business API routes.
 // This is where you add your application endpoints.
 func setupAPIRoutes(rg *gin.RouterGroup, cfg RouterConfig) {
+	// Register quote routes (public, no auth required)
+	if cfg.QuoteHandler != nil {
+		cfg.QuoteHandler.RegisterQuoteRoutes(rg)
+	}
+
 	// Example: Add your routes here
 	//
 	// Public routes (no auth):

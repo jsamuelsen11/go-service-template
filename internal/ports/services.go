@@ -13,6 +13,8 @@ package ports
 import (
 	"context"
 	"time"
+
+	"github.com/jsamuelsen/go-service-template/internal/domain"
 )
 
 // ExampleRepository demonstrates the port pattern for data persistence.
@@ -100,4 +102,19 @@ type Cache interface {
 	// Delete removes a value from the cache.
 	// Does not return an error if the key does not exist.
 	Delete(ctx context.Context, key string) error
+}
+
+// QuoteClient defines the contract for fetching quotes from an external service.
+// This demonstrates the port pattern for external API integration.
+// The adapter implementing this interface uses the ACL pattern to translate
+// external DTOs to domain types.
+type QuoteClient interface {
+	// GetRandomQuote fetches a random quote from the external service.
+	// Returns domain.ErrUnavailable if the service is unreachable.
+	GetRandomQuote(ctx context.Context) (*domain.Quote, error)
+
+	// GetQuoteByID fetches a specific quote by its identifier.
+	// Returns domain.ErrNotFound if the quote does not exist.
+	// Returns domain.ErrUnavailable if the service is unreachable.
+	GetQuoteByID(ctx context.Context, id string) (*domain.Quote, error)
 }
