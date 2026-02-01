@@ -85,10 +85,9 @@ tasks:
       - go tool gotestsum --format {{.TEST_FORMAT}} -- -race ./...
 
   test:integration:
-    desc: "[Test] Run GoDog integration tests"
-    dir: test/integration
+    desc: "[Test] Run GoDog integration tests (requires running service)"
     cmds:
-      - go tool godog run --format pretty ../features/
+      - go test -tags integration -v ./test/integration/...
 
   test:e2e:
     desc: "[Test] Run full E2E test suite"
