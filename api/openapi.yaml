@@ -1,0 +1,252 @@
+openapi: 3.0.3
+
+info:
+  title: Go Service Template API
+  description: |
+    Enterprise-grade Go backend service template implementing Clean/Hexagonal Architecture.
+
+    ## Health Endpoints
+
+    The service exposes health endpoints under the `/-/` prefix:
+    - `/-/live` - Liveness probe (always returns 200 if process is running)
+    - `/-/ready` - Readiness probe (checks all registered health checkers)
+    - `/-/build` - Build information (version, commit, build time)
+    - `/-/metrics` - Prometheus metrics
+
+    ## Error Handling
+
+    All errors follow a standard envelope format with error code, message, and optional details.
+    Trace IDs are included when available for debugging.
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+tags:
+  - name: Health
+    description: Health check and operational endpoints
+  - name: API
+    description: Business API endpoints (v1)
+
+paths:
+  /-/live:
+    get:
+      operationId: getLiveness
+      summary: Liveness probe
+      description: |
+        Returns 200 OK if the process is running.
+        Used by Kubernetes liveness probes to detect if the container needs restart.
+        This endpoint does NOT check dependencies - that's what readiness is for.
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LivenessResponse"
+              example:
+                status: ok
+
+  /-/ready:
+    get:
+      operationId: getReadiness
+      summary: Readiness probe
+      description: |
+        Returns 200 OK if all registered health checks pass.
+        Returns 503 Service Unavailable if any check fails.
+        Used by Kubernetes readiness probes to determine if the container should receive traffic.
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Service is ready to receive traffic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+              example:
+                status: healthy
+                checks:
+                  database:
+                    status: healthy
+                    duration: 5000000
+                  redis:
+                    status: healthy
+                    duration: 2000000
+        "503":
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadinessResponse"
+              example:
+                status: unhealthy
+                checks:
+                  database:
+                    status: healthy
+                    duration: 5000000
+                  redis:
+                    status: unhealthy
+                    message: "connection refused"
+                    duration: 30000000000
+
+  /-/build:
+    get:
+      operationId: getBuildInfo
+      summary: Build information
+      description: |
+        Returns build-time information including version, git commit, and build timestamp.
+        Useful for debugging and verifying deployments.
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Build information
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BuildInfo"
+              example:
+                version: "1.2.3"
+                commit: "abc123def456"
+                build_time: "2025-01-15T10:00:00Z"
+                go_version: "go1.22.0"
+
+  /-/metrics:
+    get:
+      operationId: getMetrics
+      summary: Prometheus metrics
+      description: |
+        Exposes Prometheus-formatted metrics for monitoring.
+        Includes HTTP request metrics, Go runtime metrics, and custom application metrics.
+      tags:
+        - Health
+      responses:
+        "200":
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP http_server_request_duration_seconds HTTP request duration in seconds
+                # TYPE http_server_request_duration_seconds histogram
+                http_server_request_duration_seconds_bucket{method="GET",route="/-/live",status_code="200",le="0.005"} 100
+
+components:
+  schemas:
+    LivenessResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: Always "ok" if the process is running
+          example: ok
+
+    ReadinessResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Overall health status
+        checks:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/CheckResult"
+          description: Individual health check results
+
+    CheckResult:
+      type: object
+      required:
+        - status
+        - duration
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy]
+          description: Health status of this component
+        message:
+          type: string
+          description: Error message if unhealthy
+        duration:
+          type: integer
+          format: int64
+          description: Duration of the health check in nanoseconds
+
+    BuildInfo:
+      type: object
+      required:
+        - version
+        - commit
+        - build_time
+        - go_version
+      properties:
+        version:
+          type: string
+          description: Semantic version of the service
+          example: "1.2.3"
+        commit:
+          type: string
+          description: Git commit SHA
+          example: "abc123def456"
+        build_time:
+          type: string
+          description: Build timestamp in RFC3339 format
+          example: "2025-01-15T10:00:00Z"
+        go_version:
+          type: string
+          description: Go version used to build
+          example: "go1.22.0"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          $ref: "#/components/schemas/ErrorDetail"
+        trace_id:
+          type: string
+          description: OpenTelemetry trace ID for debugging
+          example: "4bf92f3577b34da6a3ce929d0e0e4736"
+
+    ErrorDetail:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          enum:
+            - NOT_FOUND
+            - CONFLICT
+            - VALIDATION_ERROR
+            - FORBIDDEN
+            - UNAUTHORIZED
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+            - TIMEOUT
+            - BAD_REQUEST
+        message:
+          type: string
+          description: Human-readable error message
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Additional error details (e.g., field-level validation errors)

@@ -114,13 +114,15 @@ func (p *Provider) Shutdown(ctx context.Context) error {
 	var errs []error
 
 	if p.tracerProvider != nil {
-		if err := p.tracerProvider.Shutdown(shutdownCtx); err != nil {
+		err := p.tracerProvider.Shutdown(shutdownCtx)
+		if err != nil {
 			errs = append(errs, fmt.Errorf("shutting down tracer provider: %w", err))
 		}
 	}
 
 	if p.meterProvider != nil {
-		if err := p.meterProvider.Shutdown(shutdownCtx); err != nil {
+		err := p.meterProvider.Shutdown(shutdownCtx)
+		if err != nil {
 			errs = append(errs, fmt.Errorf("shutting down meter provider: %w", err))
 		}
 	}

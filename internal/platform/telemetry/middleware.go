@@ -76,6 +76,7 @@ func Middleware(serviceName string) gin.HandlerFunc {
 				attribute.String("http.method", c.Request.Method),
 				attribute.String("http.route", c.FullPath()),
 			}
+
 			metrics.activeRequests.Add(c.Request.Context(), 1, metric.WithAttributes(attrs...))
 			defer metrics.activeRequests.Add(c.Request.Context(), -1, metric.WithAttributes(attrs...))
 		}

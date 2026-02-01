@@ -15,9 +15,11 @@ func FromContext(ctx context.Context) *slog.Logger {
 	if ctx == nil {
 		return defaultLogger
 	}
+
 	if logger, ok := ctx.Value(ctxKey{}).(*slog.Logger); ok {
 		return logger
 	}
+
 	return defaultLogger
 }
 

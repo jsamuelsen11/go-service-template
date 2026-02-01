@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -13,15 +14,19 @@ var validate = validator.New(validator.WithRequiredStructEnabled())
 // Validate validates the configuration and returns an error if invalid.
 // Validation fails fast - the service should not start with invalid config.
 func (c *Config) Validate() error {
-	if err := validate.Struct(c); err != nil {
+	err := validate.Struct(c)
+	if err != nil {
 		return formatValidationErrors(err)
 	}
+
 	return nil
 }
 
 // formatValidationErrors converts validator errors to a readable format.
 func formatValidationErrors(err error) error {
-	validationErrors, ok := err.(validator.ValidationErrors)
+	var validationErrors validator.ValidationErrors
+
+	ok := errors.As(err, &validationErrors)
 	if !ok {
 		return err
 	}
@@ -40,7 +45,7 @@ func formatFieldError(e validator.FieldError) string {
 
 	switch e.Tag() {
 	case "required":
-		return fmt.Sprintf("%s is required", field)
+		return field + " is required"
 	case "required_if":
 		return fmt.Sprintf("%s is required when %s", field, e.Param())
 	case "min":
@@ -50,7 +55,7 @@ func formatFieldError(e validator.FieldError) string {
 	case "oneof":
 		return fmt.Sprintf("%s must be one of: %s", field, e.Param())
 	case "url":
-		return fmt.Sprintf("%s must be a valid URL", field)
+		return field + " must be a valid URL"
 	default:
 		return fmt.Sprintf("%s failed validation: %s", field, e.Tag())
 	}

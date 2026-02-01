@@ -1,0 +1,31 @@
+# Spectral ruleset for OpenAPI linting
+# Documentation: https://docs.stoplight.io/docs/spectral/
+
+extends:
+  - spectral:oas
+
+rules:
+  # Require operation descriptions
+  operation-description: warn
+
+  # Require operation IDs
+  operation-operationId: error
+
+  # Require tags on operations
+  operation-tags: warn
+
+  # Require info contact
+  info-contact: off
+
+  # Require info license
+  info-license: off
+
+  # Custom rule: Require examples on schema properties
+  schema-properties-require-example:
+    description: Schema properties should have examples for documentation
+    message: "Property '{{property}}' should have an example"
+    severity: warn
+    given: $.components.schemas.*.properties.*
+    then:
+      field: example
+      function: truthy

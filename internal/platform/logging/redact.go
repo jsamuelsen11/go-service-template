@@ -9,13 +9,13 @@ import (
 
 // Common regex patterns for sensitive data.
 var (
-	// JWT pattern: three base64 segments separated by dots
+	// JWT pattern: three base64 segments separated by dots.
 	jwtPattern = regexp.MustCompile(`^eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*$`)
 
-	// Bearer token pattern
+	// Bearer token pattern.
 	bearerPattern = regexp.MustCompile(`(?i)^bearer\s+.+$`)
 
-	// Basic auth pattern
+	// Basic auth pattern.
 	basicAuthPattern = regexp.MustCompile(`(?i)^basic\s+.+$`)
 )
 
