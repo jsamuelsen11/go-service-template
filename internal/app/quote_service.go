@@ -24,10 +24,20 @@ type QuoteServiceConfig struct {
 }
 
 // NewQuoteService creates a new quote service with the provided dependencies.
+// Panics if QuoteClient is nil. Defaults logger to slog.Default() if nil.
 func NewQuoteService(cfg QuoteServiceConfig) *QuoteService {
+	if cfg.QuoteClient == nil {
+		panic("QuoteService: QuoteClient is required")
+	}
+
+	logger := cfg.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	return &QuoteService{
 		quoteClient: cfg.QuoteClient,
-		logger:      cfg.Logger,
+		logger:      logger,
 	}
 }
 

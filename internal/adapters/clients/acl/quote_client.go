@@ -34,10 +34,20 @@ type QuoteClient struct {
 }
 
 // NewQuoteClient creates a new quote client adapter.
+// Panics if Client is nil. Defaults logger to slog.Default() if nil.
 func NewQuoteClient(cfg QuoteClientConfig) *QuoteClient {
+	if cfg.Client == nil {
+		panic("QuoteClient: Client is required")
+	}
+
+	logger := cfg.Logger
+	if logger == nil {
+		logger = slog.Default()
+	}
+
 	return &QuoteClient{
 		client: cfg.Client,
-		logger: cfg.Logger,
+		logger: logger,
 	}
 }
 
