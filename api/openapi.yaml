@@ -47,7 +47,7 @@ paths:
         - Health
       responses:
         "200":
-          description: Service is alive
+          description: Process is running and accepting requests
           content:
             application/json:
               schema:
@@ -67,7 +67,7 @@ paths:
         - Health
       responses:
         "200":
-          description: Service is ready to receive traffic
+          description: All health checks passed, service can receive traffic
           content:
             application/json:
               schema:
@@ -81,8 +81,19 @@ paths:
                   redis:
                     status: healthy
                     duration: 2000000
+        "500":
+          description: Internal server error occurred during health check
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: INTERNAL_ERROR
+                  message: "Failed to execute health checks"
+                traceId: "4bf92f3577b34da6a3ce929d0e0e4736"
         "503":
-          description: Service is not ready
+          description: One or more health checks failed, service should not receive traffic
           content:
             application/json:
               schema:
@@ -109,7 +120,7 @@ paths:
         - Health
       responses:
         "200":
-          description: Build information
+          description: Build metadata for the running service instance
           content:
             application/json:
               schema:
@@ -117,8 +128,8 @@ paths:
               example:
                 version: "1.2.3"
                 commit: "abc123def456"
-                build_time: "2025-01-15T10:00:00Z"
-                go_version: "go1.22.0"
+                buildTime: "2025-01-15T10:00:00Z"
+                goVersion: "go1.22.0"
 
   /-/metrics:
     get:
@@ -131,19 +142,20 @@ paths:
         - Health
       responses:
         "200":
-          description: Prometheus metrics
+          description: Prometheus text-based metrics exposition format
           content:
             text/plain:
               schema:
                 type: string
               example: |
-                # HELP http_server_request_duration_seconds HTTP request duration in seconds
+                # HELP http_server_request_duration_seconds HTTP request duration
                 # TYPE http_server_request_duration_seconds histogram
-                http_server_request_duration_seconds_bucket{method="GET",route="/-/live",status_code="200",le="0.005"} 100
+                http_server_request_duration_seconds_bucket{le="0.005"} 100
 
 components:
   schemas:
     LivenessResponse:
+      description: Response indicating the service process is alive and running
       type: object
       required:
         - status
@@ -154,6 +166,7 @@ components:
           example: ok
 
     ReadinessResponse:
+      description: Response indicating service readiness with individual component health checks
       type: object
       required:
         - status
@@ -162,13 +175,19 @@ components:
           type: string
           enum: [healthy, unhealthy]
           description: Overall health status
+          example: healthy
         checks:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/CheckResult"
-          description: Individual health check results
+          description: Individual health check results keyed by component name
+          example:
+            database:
+              status: healthy
+              duration: 5000000
 
     CheckResult:
+      description: Result of an individual health check for a service component
       type: object
       required:
         - status
@@ -178,21 +197,25 @@ components:
           type: string
           enum: [healthy, unhealthy]
           description: Health status of this component
+          example: healthy
         message:
           type: string
           description: Error message if unhealthy
+          example: "connection refused"
         duration:
           type: integer
           format: int64
           description: Duration of the health check in nanoseconds
+          example: 5000000
 
     BuildInfo:
+      description: Build-time metadata injected during compilation via ldflags
       type: object
       required:
         - version
         - commit
-        - build_time
-        - go_version
+        - buildTime
+        - goVersion
       properties:
         version:
           type: string
@@ -202,28 +225,34 @@ components:
           type: string
           description: Git commit SHA
           example: "abc123def456"
-        build_time:
+        buildTime:
           type: string
           description: Build timestamp in RFC3339 format
           example: "2025-01-15T10:00:00Z"
-        go_version:
+        goVersion:
           type: string
           description: Go version used to build
           example: "go1.22.0"
 
     ErrorResponse:
+      description: Standard error envelope returned for all API errors
       type: object
       required:
         - error
       properties:
         error:
-          $ref: "#/components/schemas/ErrorDetail"
-        trace_id:
+          allOf:
+            - $ref: "#/components/schemas/ErrorDetail"
+          example:
+            code: NOT_FOUND
+            message: "The requested resource was not found"
+        traceId:
           type: string
           description: OpenTelemetry trace ID for debugging
           example: "4bf92f3577b34da6a3ce929d0e0e4736"
 
     ErrorDetail:
+      description: Detailed error information with machine-readable code and human-readable message
       type: object
       required:
         - code
@@ -242,11 +271,16 @@ components:
             - INTERNAL_ERROR
             - TIMEOUT
             - BAD_REQUEST
+          example: NOT_FOUND
         message:
           type: string
           description: Human-readable error message
+          example: "The requested resource was not found"
         details:
           type: object
           additionalProperties:
             type: string
           description: Additional error details (e.g., field-level validation errors)
+          example:
+            field: "email"
+            reason: "invalid format"
