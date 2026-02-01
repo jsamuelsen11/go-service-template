@@ -27,6 +27,7 @@ func RequestID() gin.HandlerFunc {
 		headerName:      HeaderRequestID,
 		contextKey:      ContextKeyRequestID,
 		contextEnricher: logging.WithRequestID,
+		contextStorer:   ContextWithRequestID,
 	})
 }
 

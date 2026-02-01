@@ -22,6 +22,18 @@ const (
 
 	// DefaultMaxRequestSize is the default maximum request body size (1MB).
 	DefaultMaxRequestSize = 1 << 20 // 1048576 bytes
+
+	// DefaultClientRetryMaxAttempts is the default number of retry attempts.
+	DefaultClientRetryMaxAttempts = 3
+
+	// DefaultClientRetryMultiplier is the default exponential backoff multiplier.
+	DefaultClientRetryMultiplier = 2.0
+
+	// DefaultClientCircuitMaxFailures is the default failures before circuit opens.
+	DefaultClientCircuitMaxFailures = 5
+
+	// DefaultClientCircuitHalfOpenLimit is the default successes to close circuit.
+	DefaultClientCircuitHalfOpenLimit = 3
 )
 
 // Config is the root configuration structure.
@@ -31,6 +43,7 @@ type Config struct {
 	Log       LogConfig       `koanf:"log"       validate:"required"`
 	Telemetry TelemetryConfig `koanf:"telemetry"`
 	Auth      AuthConfig      `koanf:"auth"`
+	Client    ClientConfig    `koanf:"client"    validate:"required"`
 }
 
 // AppConfig contains application-level settings.
@@ -77,6 +90,28 @@ type AuthConfig struct {
 	SubjectHeader string `koanf:"subject_header"`
 }
 
+// ClientConfig contains HTTP client settings for downstream services.
+type ClientConfig struct {
+	Timeout        time.Duration        `koanf:"timeout"         validate:"required,min=100ms"`
+	Retry          RetryConfig          `koanf:"retry"           validate:"required"`
+	CircuitBreaker CircuitBreakerConfig `koanf:"circuit_breaker" validate:"required"`
+}
+
+// RetryConfig contains retry settings for HTTP clients.
+type RetryConfig struct {
+	MaxAttempts     int           `koanf:"max_attempts"     validate:"required,min=1,max=10"`
+	InitialInterval time.Duration `koanf:"initial_interval" validate:"required,min=10ms"`
+	MaxInterval     time.Duration `koanf:"max_interval"     validate:"required,min=100ms"`
+	Multiplier      float64       `koanf:"multiplier"       validate:"required,min=1.1,max=10"`
+}
+
+// CircuitBreakerConfig contains circuit breaker settings for HTTP clients.
+type CircuitBreakerConfig struct {
+	MaxFailures   int           `koanf:"max_failures"    validate:"required,min=1"`
+	Timeout       time.Duration `koanf:"timeout"         validate:"required,min=1s"`
+	HalfOpenLimit int           `koanf:"half_open_limit" validate:"required,min=1"`
+}
+
 // defaults returns the default configuration values.
 func defaults() map[string]any {
 	return map[string]any{
@@ -108,6 +143,15 @@ func defaults() map[string]any {
 		"auth.roles_header":   "X-User-Roles",
 		"auth.scopes_header":  "X-User-Scopes",
 		"auth.subject_header": "X-User-ID",
+
+		"client.timeout":                         "30s",
+		"client.retry.max_attempts":              DefaultClientRetryMaxAttempts,
+		"client.retry.initial_interval":          "100ms",
+		"client.retry.max_interval":              "5s",
+		"client.retry.multiplier":                DefaultClientRetryMultiplier,
+		"client.circuit_breaker.max_failures":    DefaultClientCircuitMaxFailures,
+		"client.circuit_breaker.timeout":         "30s",
+		"client.circuit_breaker.half_open_limit": DefaultClientCircuitHalfOpenLimit,
 	}
 }
 
