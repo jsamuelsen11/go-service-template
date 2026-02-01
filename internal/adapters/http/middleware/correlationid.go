@@ -30,6 +30,7 @@ func CorrelationID() gin.HandlerFunc {
 		headerName:      HeaderCorrelationID,
 		contextKey:      ContextKeyCorrelationID,
 		contextEnricher: logging.WithCorrelationID,
+		contextStorer:   ContextWithCorrelationID,
 	})
 }
 

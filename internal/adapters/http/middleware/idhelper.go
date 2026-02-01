@@ -12,6 +12,7 @@ type idMiddlewareConfig struct {
 	headerName      string
 	contextKey      string
 	contextEnricher func(ctx context.Context, id string) context.Context
+	contextStorer   func(ctx context.Context, id string) context.Context // Stores ID in context.Context for downstream propagation
 }
 
 // createIDMiddleware creates middleware that extracts or generates an ID.
@@ -31,11 +32,18 @@ func createIDMiddleware(cfg idMiddlewareConfig) gin.HandlerFunc {
 		// Add to response headers
 		c.Header(cfg.headerName, id)
 
-		// Enrich context if enricher provided
-		if cfg.contextEnricher != nil {
-			ctx := cfg.contextEnricher(c.Request.Context(), id)
-			c.Request = c.Request.WithContext(ctx)
+		// Store ID in context.Context for downstream propagation (client adapters)
+		ctx := c.Request.Context()
+		if cfg.contextStorer != nil {
+			ctx = cfg.contextStorer(ctx, id)
 		}
+
+		// Enrich context logger with ID
+		if cfg.contextEnricher != nil {
+			ctx = cfg.contextEnricher(ctx, id)
+		}
+
+		c.Request = c.Request.WithContext(ctx)
 
 		c.Next()
 	}

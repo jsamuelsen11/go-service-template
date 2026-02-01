@@ -33,3 +33,16 @@ auth:
   roles_header: X-User-Roles
   scopes_header: X-User-Scopes
   subject_header: X-User-ID
+
+# HTTP client settings for downstream services
+client:
+  timeout: 30s
+  retry:
+    max_attempts: 3
+    initial_interval: 100ms
+    max_interval: 5s
+    multiplier: 2.0
+  circuit_breaker:
+    max_failures: 5
+    timeout: 30s
+    half_open_limit: 3
