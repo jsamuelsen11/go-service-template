@@ -4,6 +4,7 @@ vars:
   BINARY_NAME: service
   MAIN_PKG: ./cmd/service
   COVERAGE_FILE: coverage.out
+  TEST_FORMAT: testdox # default format, override with: task test TEST_FORMAT=dots
   VERSION:
     sh: git describe --tags --always --dirty 2>/dev/null || echo "dev"
   GIT_COMMIT:
@@ -79,9 +80,9 @@ tasks:
   # ─────────────────────────────────────────────────────────────
 
   test:
-    desc: "[Test] Run unit tests"
+    desc: "[Test] Run unit tests (override format with TEST_FORMAT=dots|pkgname|standard-verbose)"
     cmds:
-      - go test -race -v ./...
+      - go tool gotestsum --format {{.TEST_FORMAT}} -- -race ./...
 
   test:integration:
     desc: "[Test] Run GoDog integration tests"
@@ -108,7 +109,7 @@ tasks:
   coverage:
     desc: "[Test] Generate test coverage report"
     cmds:
-      - go test -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic ./...
+      - go tool gotestsum --format {{.TEST_FORMAT}} -- -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic ./...
       - go tool cover -html={{.COVERAGE_FILE}} -o coverage.html
       - go tool cover -func={{.COVERAGE_FILE}}
 
