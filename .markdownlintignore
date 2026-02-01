@@ -1,0 +1,12 @@
+# Claude Code files
+AGENTS.md
+CLAUDE.md
+
+# Beads issue tracker
+.beads/
+
+# Node modules (if any)
+node_modules/
+
+# Vendor directory
+vendor/

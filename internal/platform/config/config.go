@@ -15,6 +15,15 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
+// Default configuration values.
+const (
+	// DefaultServerPort is the default HTTP server port.
+	DefaultServerPort = 8080
+
+	// DefaultMaxRequestSize is the default maximum request body size (1MB).
+	DefaultMaxRequestSize = 1 << 20 // 1048576 bytes
+)
+
 // Config is the root configuration structure.
 type Config struct {
 	App       AppConfig       `koanf:"app"       validate:"required"`
@@ -75,13 +84,13 @@ func defaults() map[string]any {
 		"app.version":     "dev",
 		"app.environment": "local",
 
-		"server.port":             8080,
+		"server.port":             DefaultServerPort,
 		"server.host":             "0.0.0.0",
 		"server.read_timeout":     "30s",
 		"server.write_timeout":    "30s",
 		"server.idle_timeout":     "120s",
 		"server.shutdown_timeout": "10s",
-		"server.max_request_size": 1048576, // 1MB
+		"server.max_request_size": DefaultMaxRequestSize,
 
 		"log.level":  "info",
 		"log.format": "json",

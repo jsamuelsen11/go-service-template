@@ -32,10 +32,9 @@ pre-commit:
       glob: "*openapi*.{yaml,yml,json}"
       run: go tool vacuum lint -r .spectral.yaml {staged_files}
 
-    vale:
+    markdownlint:
       glob: "*.md"
-      exclude: "^(\\.beads/|AGENTS\\.md)"
-      run: go tool vale {staged_files}
+      run: npx --yes markdownlint-cli {staged_files}
 
     tomll:
       glob: "*.toml"

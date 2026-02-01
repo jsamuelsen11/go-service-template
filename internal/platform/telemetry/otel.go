@@ -16,6 +16,9 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
+// ShutdownTimeout is the timeout for graceful telemetry provider shutdown.
+const ShutdownTimeout = 5 * time.Second
+
 // Config holds telemetry configuration.
 type Config struct {
 	Enabled      bool
@@ -108,7 +111,7 @@ func (p *Provider) Shutdown(ctx context.Context) error {
 	}
 
 	// Use a timeout context for shutdown
-	shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	shutdownCtx, cancel := context.WithTimeout(ctx, ShutdownTimeout)
 	defer cancel()
 
 	var errs []error
