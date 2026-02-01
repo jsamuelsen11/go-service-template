@@ -44,10 +44,23 @@ func TestContextWithCorrelationID(t *testing.T) {
 }
 
 func TestIDFromContext_NotSet(t *testing.T) {
-	ctx := context.Background()
+	t.Run("request id from nil context", func(t *testing.T) {
+		assert.Equal(t, "", RequestIDFromContext(nil)) //nolint:staticcheck // Testing nil handling
+	})
 
-	assert.Empty(t, RequestIDFromContext(ctx))
-	assert.Empty(t, CorrelationIDFromContext(ctx))
+	t.Run("correlation id from nil context", func(t *testing.T) {
+		assert.Equal(t, "", CorrelationIDFromContext(nil)) //nolint:staticcheck // Testing nil handling
+	})
+
+	t.Run("request id from empty background context", func(t *testing.T) {
+		ctx := context.Background()
+		assert.Equal(t, "", RequestIDFromContext(ctx))
+	})
+
+	t.Run("correlation id from empty background context", func(t *testing.T) {
+		ctx := context.Background()
+		assert.Equal(t, "", CorrelationIDFromContext(ctx))
+	})
 }
 
 func TestBothIDsCanBeStoredTogether(t *testing.T) {

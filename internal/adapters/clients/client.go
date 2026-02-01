@@ -29,12 +29,6 @@ const (
 	// instrumentationName is used for OpenTelemetry tracer and meter.
 	instrumentationName = "github.com/jsamuelsen/go-service-template/internal/adapters/clients"
 
-	// HeaderRequestID is the header for request ID propagation.
-	HeaderRequestID = "X-Request-ID"
-
-	// HeaderCorrelationID is the header for correlation ID propagation.
-	HeaderCorrelationID = "X-Correlation-ID"
-
 	// httpStatusCategoryDivisor divides status code to get category (2xx, 4xx, 5xx).
 	httpStatusCategoryDivisor = 100
 
@@ -65,7 +59,8 @@ type Config struct {
 	// ServiceName identifies the downstream service for logging and tracing.
 	ServiceName string
 
-	// Timeout is the request timeout (including retries).
+	// Timeout is the per-attempt request timeout.
+	// Total wall-clock time may exceed this value due to retries and backoff.
 	Timeout time.Duration
 
 	// Retry configures retry behavior.
@@ -190,6 +185,10 @@ func New(cfg *Config) (*Client, error) {
 }
 
 // Do executes an HTTP request with retry, circuit breaker, tracing, and logging.
+//
+// Note: Retry only works correctly for requests with no body (GET, DELETE) or requests
+// where req.GetBody is set (allowing the body to be rewound). For POST/PUT with streaming
+// bodies, ensure GetBody is set or limit MaxAttempts to 1.
 func (c *Client) Do(ctx context.Context, req *http.Request) (*http.Response, error) {
 	startTime := time.Now()
 	logger := logging.FromContext(ctx).With(
@@ -395,12 +394,12 @@ func (c *Client) CircuitState() State {
 func (c *Client) injectHeaders(ctx context.Context, req *http.Request) {
 	// Propagate request ID
 	if requestID := middleware.RequestIDFromContext(ctx); requestID != "" {
-		req.Header.Set(HeaderRequestID, requestID)
+		req.Header.Set(middleware.HeaderRequestID, requestID)
 	}
 
 	// Propagate correlation ID
 	if correlationID := middleware.CorrelationIDFromContext(ctx); correlationID != "" {
-		req.Header.Set(HeaderCorrelationID, correlationID)
+		req.Header.Set(middleware.HeaderCorrelationID, correlationID)
 	}
 
 	// Inject auth if configured

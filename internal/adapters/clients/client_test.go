@@ -3,10 +3,12 @@ package clients
 import (
 	"context"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"sync/atomic"
+	"syscall"
 	"testing"
 	"time"
 
@@ -73,8 +75,8 @@ func TestClient_HeaderPropagation(t *testing.T) {
 	var receivedCorrelationID string
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		receivedRequestID = r.Header.Get(HeaderRequestID)
-		receivedCorrelationID = r.Header.Get(HeaderCorrelationID)
+		receivedRequestID = r.Header.Get(middleware.HeaderRequestID)
+		receivedCorrelationID = r.Header.Get(middleware.HeaderCorrelationID)
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer server.Close()
@@ -372,6 +374,15 @@ func TestCalculateBackoff(t *testing.T) {
 	assert.LessOrEqual(t, backoff10, cfg.Retry.MaxInterval+cfg.Retry.MaxInterval/4)
 }
 
+// testNetError is a mock net.Error for testing.
+type testNetError struct {
+	timeout bool
+}
+
+func (e testNetError) Error() string   { return "test net error" }
+func (e testNetError) Timeout() bool   { return e.timeout }
+func (e testNetError) Temporary() bool { return true }
+
 func TestIsRetryableError(t *testing.T) {
 	tests := []struct {
 		name      string
@@ -381,6 +392,9 @@ func TestIsRetryableError(t *testing.T) {
 		{"nil error", nil, false},
 		{"context canceled", context.Canceled, false},
 		{"context deadline exceeded", context.DeadlineExceeded, false},
+		{"net error with timeout", testNetError{timeout: true}, true},
+		{"net error without timeout", testNetError{timeout: false}, false},
+		{"net op error connection refused", &net.OpError{Op: "dial", Net: "tcp", Err: syscall.ECONNREFUSED}, true},
 	}
 
 	for _, tt := range tests {
@@ -389,4 +403,70 @@ func TestIsRetryableError(t *testing.T) {
 			assert.Equal(t, tt.retryable, result)
 		})
 	}
+}
+
+func TestClient_CircuitBreakerShortCircuitsWhenOpen(t *testing.T) {
+	var calls int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&calls, 1)
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer server.Close()
+
+	cfg := defaultConfig()
+	cfg.BaseURL = server.URL
+	cfg.Retry.MaxAttempts = 1
+	cfg.Circuit.MaxFailures = 2
+
+	client, err := New(cfg)
+	require.NoError(t, err)
+
+	// Trigger failures to open the circuit
+	_, _ = client.Get(context.Background(), "/test")
+	_, _ = client.Get(context.Background(), "/test")
+	assert.Equal(t, StateOpen, client.CircuitState())
+
+	callsBefore := atomic.LoadInt32(&calls)
+
+	// This request should be short-circuited without hitting the server
+	_, err = client.Get(context.Background(), "/test")
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrCircuitOpen)
+	assert.Equal(t, callsBefore, atomic.LoadInt32(&calls), "request should be short-circuited when circuit is open")
+}
+
+func TestClient_AuthFuncCalledOnRetry(t *testing.T) {
+	var authCallCount int32
+	var requestCount int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		count := atomic.AddInt32(&requestCount, 1)
+		if count == 1 {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	cfg := defaultConfig()
+	cfg.BaseURL = server.URL
+	cfg.Retry.MaxAttempts = 2
+	cfg.Retry.InitialInterval = 1 * time.Millisecond
+	cfg.AuthFunc = func(r *http.Request) {
+		atomic.AddInt32(&authCallCount, 1)
+		r.Header.Set("Authorization", "Bearer test-token")
+	}
+
+	client, err := New(cfg)
+	require.NoError(t, err)
+
+	resp, err := client.Get(context.Background(), "/test")
+	require.NoError(t, err)
+	defer closeBody(t, resp)
+
+	assert.Equal(t, http.StatusOK, resp.StatusCode)
+	// AuthFunc should be called: once initially + once on retry
+	assert.Equal(t, int32(2), atomic.LoadInt32(&authCallCount))
 }

@@ -55,12 +55,13 @@ type CircuitBreakerConfig struct {
 //   - HalfOpen → Closed: After HalfOpenLimit consecutive successes
 //   - HalfOpen → Open: On any failure
 type CircuitBreaker struct {
-	mu          sync.RWMutex
-	state       State
-	failures    int       // consecutive failures in closed state
-	successes   int       // consecutive successes in half-open state
-	lastFailure time.Time // time of last failure (for timeout calculation)
-	cfg         CircuitBreakerConfig
+	mu               sync.RWMutex
+	state            State
+	failures         int       // consecutive failures in closed state
+	successes        int       // consecutive successes in half-open state
+	halfOpenRequests int       // current requests in flight during half-open state
+	lastFailure      time.Time // time of last failure (for timeout calculation)
+	cfg              CircuitBreakerConfig
 
 	// onStateChange is called when the state changes. Can be used for logging/metrics.
 	onStateChange func(from, to State)
@@ -90,6 +91,7 @@ func (cb *CircuitBreaker) OnStateChange(fn func(from, to State)) {
 // Returns true if the request should proceed, false if it should be blocked.
 //
 // This method may trigger a state transition from Open to HalfOpen if the timeout has passed.
+// In half-open state, only HalfOpenLimit concurrent requests are allowed to probe recovery.
 func (cb *CircuitBreaker) Allow() bool {
 	cb.mu.Lock()
 	defer cb.mu.Unlock()
@@ -102,12 +104,17 @@ func (cb *CircuitBreaker) Allow() bool {
 		// Check if timeout has passed
 		if cb.now().Sub(cb.lastFailure) >= cb.cfg.Timeout {
 			cb.transitionTo(StateHalfOpen)
+			cb.halfOpenRequests = 1
 			return true // Allow one request through to probe
 		}
 		return false
 
 	case StateHalfOpen:
-		// In half-open state, allow requests through to probe recovery
+		// Limit concurrent requests in half-open state
+		if cb.halfOpenRequests >= cb.cfg.HalfOpenLimit {
+			return false
+		}
+		cb.halfOpenRequests++
 		return true
 
 	default:
@@ -127,6 +134,7 @@ func (cb *CircuitBreaker) RecordSuccess() {
 		cb.failures = 0
 
 	case StateHalfOpen:
+		cb.halfOpenRequests--
 		cb.successes++
 		if cb.successes >= cb.cfg.HalfOpenLimit {
 			cb.transitionTo(StateClosed)
@@ -151,6 +159,7 @@ func (cb *CircuitBreaker) RecordFailure() {
 		}
 
 	case StateHalfOpen:
+		cb.halfOpenRequests--
 		// Any failure in half-open immediately reopens
 		cb.transitionTo(StateOpen)
 	}
