@@ -147,10 +147,10 @@ paths:
             text/plain:
               schema:
                 type: string
-                example: |
-                  # HELP http_server_request_duration_seconds HTTP request duration
-                  # TYPE http_server_request_duration_seconds histogram
-                  http_server_request_duration_seconds_bucket{le="0.005"} 100
+              example: |
+                # HELP http_server_request_duration_seconds HTTP request duration
+                # TYPE http_server_request_duration_seconds histogram
+                http_server_request_duration_seconds_bucket{le="0.005"} 100
 
 components:
   schemas:
