@@ -31,8 +31,8 @@ servers:
 tags:
   - name: Health
     description: Health check and operational endpoints
-  - name: API
-    description: Business API endpoints (v1)
+  - name: Quotes
+    description: Quote retrieval endpoints demonstrating the full architecture
 
 paths:
   /-/live:
@@ -151,6 +151,106 @@ paths:
                 # HELP http_server_request_duration_seconds HTTP request duration
                 # TYPE http_server_request_duration_seconds histogram
                 http_server_request_duration_seconds_bucket{le="0.005"} 100
+
+  /api/v1/quotes/random:
+    get:
+      operationId: getRandomQuote
+      summary: Get a random quote
+      description: |
+        Fetches a random quote from the external quote service.
+        Demonstrates the full hexagonal architecture:
+        - HTTP Handler → Application Service → ACL Client → External API
+      tags:
+        - Quotes
+      responses:
+        "200":
+          description: A random quote was successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteResponse"
+              example:
+                id: "abc123"
+                content: "The only way to do great work is to love what you do."
+                author: "Steve Jobs"
+                tags:
+                  - inspirational
+                  - work
+        "503":
+          description: External quote service is temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: SERVICE_UNAVAILABLE
+                  message: "Service temporarily unavailable"
+                traceId: "4bf92f3577b34da6a3ce929d0e0e4736"
+
+  /api/v1/quotes/{id}:
+    get:
+      operationId: getQuoteById
+      summary: Get a quote by ID
+      description: |
+        Fetches a specific quote by its unique identifier.
+        Returns 404 if the quote does not exist.
+      tags:
+        - Quotes
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The unique identifier of the quote
+          schema:
+            type: string
+          example: "abc123"
+      responses:
+        "200":
+          description: The quote was found and returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteResponse"
+              example:
+                id: "abc123"
+                content: "The only way to do great work is to love what you do."
+                author: "Steve Jobs"
+                tags:
+                  - inspirational
+                  - work
+        "400":
+          description: Invalid request (e.g., missing quote ID)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: BAD_REQUEST
+                  message: "quote ID is required"
+        "404":
+          description: Quote not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: NOT_FOUND
+                  message: "quote abc123: not found"
+                traceId: "4bf92f3577b34da6a3ce929d0e0e4736"
+        "503":
+          description: Unable to reach external quote service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error:
+                  code: SERVICE_UNAVAILABLE
+                  message: "Service temporarily unavailable"
+                traceId: "4bf92f3577b34da6a3ce929d0e0e4736"
 
 components:
   schemas:
@@ -284,3 +384,32 @@ components:
           example:
             field: "email"
             reason: "invalid format"
+
+    QuoteResponse:
+      description: A quote with its author and metadata
+      type: object
+      required:
+        - id
+        - content
+        - author
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the quote
+          example: "abc123"
+        content:
+          type: string
+          description: The text of the quote
+          example: "The only way to do great work is to love what you do."
+        author:
+          type: string
+          description: The person who said or wrote the quote
+          example: "Steve Jobs"
+        tags:
+          type: array
+          items:
+            type: string
+          description: Categories or themes associated with the quote
+          example:
+            - inspirational
+            - work
