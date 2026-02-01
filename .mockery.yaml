@@ -1,0 +1,23 @@
+# Mockery configuration for generating interface mocks.
+# Run: task generate
+# Docs: https://vektra.github.io/mockery/
+
+with-expecter: true
+mockname: "Mock{{.InterfaceName}}"
+outpkg: mocks
+dir: "{{.InterfaceDir}}/mocks"
+
+packages:
+  github.com/jsamuelsen/go-service-template/internal/ports:
+    interfaces:
+      # Health check interfaces
+      HealthChecker:
+      HealthRegistry:
+
+      # Service port interfaces
+      QuoteClient:
+      Cache:
+      EventPublisher:
+
+      # Feature flags
+      FeatureFlags:
