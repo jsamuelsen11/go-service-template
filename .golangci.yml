@@ -9,19 +9,27 @@ run:
   tests: true
 
 linters:
-  default: all
-  disable:
-    # Overly strict or noisy linters
-    - wsl # Too strict about whitespace
-    - nlreturn # Too strict about newlines
-    - varnamelen # Too strict about variable naming length
-    - ireturn # Too strict about interface returns
-    - gochecknoglobals # Globals are sometimes necessary
-    - gochecknoinits # Inits are sometimes necessary
-    - exhaustruct # Often too noisy - not all struct fields need initialization
-    - nonamedreturns # Named returns are fine when used appropriately
-    - testpackage # Forces black-box testing, not always desired
-    - depguard # Requires specific configuration per-project
+  default: none
+  enable:
+    # Core quality
+    - errcheck # Check for unchecked errors
+    - govet # Go's built-in static analyzer
+    - staticcheck # Advanced static analysis (includes gosimple)
+    - unused # Find unused code
+
+    # Security
+    - gosec # Security vulnerability scanner
+
+    # Style
+    - gocritic # Opinionated code suggestions
+    - revive # Fast, configurable linter (replaces golint)
+
+    # Complexity & structure
+    - gocyclo # Cyclomatic complexity
+    - gocognit # Cognitive complexity
+    - nestif # Nested if complexity
+    - dupl # Code duplication
+    - mnd # Magic number detector
 
   settings:
     errcheck:
@@ -37,31 +45,29 @@ linters:
         - style
         - performance
 
+    revive:
+      severity: error
+
+    staticcheck:
+      checks:
+        - all
+
     gocyclo:
       min-complexity: 15
 
     gocognit:
       min-complexity: 20
 
+    nestif:
+      min-complexity: 5
+
     dupl:
       threshold: 100
-
-    lll:
-      line-length: 120
-
-    misspell:
-      locale: US
-
-    revive:
-      severity: warning
-
-    staticcheck:
-      checks:
-        - all
 
 formatters:
   enable:
     - goimports
+    - gofumpt
 
   settings:
     goimports:
@@ -77,19 +83,12 @@ issues:
     # Relax linters for test files
     - path: _test\.go
       linters:
-        - dupl
-        - funlen
-        - goconst
-        - gocyclo
-        - gocognit
         - gocritic
         - gosec
+        - dupl
+        - mnd
 
     # Common patterns that are safe to ignore
     - linters:
         - errcheck
       text: "Error return value of .*Write.* is not checked"
-
-    - linters:
-        - govet
-      text: 'shadow: declaration of "err"'

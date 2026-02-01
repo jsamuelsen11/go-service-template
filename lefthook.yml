@@ -1,0 +1,81 @@
+# Lefthook configuration for git hooks
+# Install: go tool lefthook install
+# Run manually: go tool lefthook run pre-commit
+
+pre-commit:
+  parallel: true
+  commands:
+    # === Go tools (built-in) ===
+    go-mod-tidy:
+      glob: "*.go"
+      run: go mod tidy
+
+    # === Go tools (via go tool) ===
+    golangci-lint:
+      glob: "*.go"
+      run: go tool golangci-lint run --fix --config=.golangci.yml ./...
+      stage_fixed: true
+
+    gofumpt:
+      glob: "*.go"
+      run: go tool gofumpt -w {staged_files}
+      stage_fixed: true
+
+    actionlint:
+      glob: ".github/workflows/*.{yaml,yml}"
+      run: go tool actionlint {staged_files}
+
+    gitleaks:
+      run: go tool gitleaks protect --staged --no-banner
+
+    vacuum:
+      glob: "*openapi*.{yaml,yml,json}"
+      run: go tool vacuum lint -r .spectral.yaml {staged_files}
+
+    vale:
+      glob: "*.md"
+      exclude: "^(\\.beads/|AGENTS\\.md)"
+      run: go tool vale {staged_files}
+
+    tomll:
+      glob: "*.toml"
+      run: go tool tomll {staged_files}
+      stage_fixed: true
+
+    misspell:
+      glob: "*.{go,md,yaml,yml,json,toml,sh}"
+      run: go tool misspell -w {staged_files}
+      stage_fixed: true
+
+    # === Formatting (npx) ===
+    prettier:
+      glob: "*.{yaml,yml,json,md}"
+      exclude: "^(\\.github/.*|\\.beads/.*)$"
+      run: npx --yes prettier --write {staged_files}
+      stage_fixed: true
+
+    # === Linting (npx) ===
+    shellcheck:
+      glob: "*.sh"
+      run: npx --yes shellcheck {staged_files}
+
+    # === Linting (Docker) ===
+    hadolint:
+      glob: "Dockerfile*"
+      run: docker run --rm -i hadolint/hadolint < {staged_files}
+
+commit-msg:
+  commands:
+    commitlint:
+      run: go tool commitlint lint --message {1}
+
+pre-push:
+  parallel: true
+  commands:
+    go-test:
+      glob: "*.go"
+      run: go test ./...
+
+    go-build:
+      glob: "*.go"
+      run: go build ./...

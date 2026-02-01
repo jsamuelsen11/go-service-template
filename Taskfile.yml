@@ -26,24 +26,19 @@ tasks:
     desc: "[Setup] Install all development dependencies"
     cmds:
       - go mod download
-      - go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-      - go install github.com/vektra/mockery/v2@latest
-      - go install github.com/cucumber/godog/cmd/godog@latest
-      - go install golang.org/x/vuln/cmd/govulncheck@latest
-      - go install github.com/air-verse/air@latest
-      - npm install -g @stoplight/spectral-cli
-      - echo "Run 'prek install' to set up git hooks"
+      - go tool lefthook install
+      - echo "Setup complete. All tools available via 'go tool'. Git hooks installed."
 
   run:
     desc: "[Dev] Run the service locally with hot reload"
     cmds:
-      - air -c .air.toml || go run {{.MAIN_PKG}}
+      - go tool air -c .air.toml || go run {{.MAIN_PKG}}
 
   generate:
     desc: "[Dev] Run go generate (mocks, etc.)"
     cmds:
       - go generate ./...
-      - mockery
+      - go tool mockery
 
   # ─────────────────────────────────────────────────────────────
   # Build
@@ -67,18 +62,17 @@ tasks:
   fmt:
     desc: "[Quality] Format all Go code"
     cmds:
-      - gofmt -s -w .
-      - goimports -w -local github.com/jsamuelsen/go-service-template .
+      - go tool gofumpt -w .
 
   lint:
     desc: "[Quality] Run golangci-lint"
     cmds:
-      - golangci-lint run --timeout 5m ./...
+      - go tool golangci-lint run --timeout 5m ./...
 
   vuln:
     desc: "[Quality] Run govulncheck"
     cmds:
-      - govulncheck ./...
+      - go tool govulncheck ./...
 
   # ─────────────────────────────────────────────────────────────
   # Testing
@@ -93,7 +87,7 @@ tasks:
     desc: "[Test] Run GoDog integration tests"
     dir: test/integration
     cmds:
-      - godog run --format pretty ../features/
+      - go tool godog run --format pretty ../features/
 
   test:e2e:
     desc: "[Test] Run full E2E test suite"
@@ -152,9 +146,9 @@ tasks:
   openapi:validate:
     desc: "[OpenAPI] Validate OpenAPI spec"
     cmds:
-      - spectral lint api/openapi.yaml
+      - go tool vacuum lint -r .spectral.yaml api/openapi.yaml
 
   openapi:diff:
     desc: "[OpenAPI] Check for OpenAPI drift"
     cmds:
-      - echo "TODO: Implement OpenAPI drift detection"
+      - cmd: echo "TODO Implement OpenAPI drift detection"

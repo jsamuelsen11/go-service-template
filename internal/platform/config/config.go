@@ -17,51 +17,51 @@ import (
 
 // Config is the root configuration structure.
 type Config struct {
-	App       AppConfig       `koanf:"app" validate:"required"`
-	Server    ServerConfig    `koanf:"server" validate:"required"`
-	Log       LogConfig       `koanf:"log" validate:"required"`
+	App       AppConfig       `koanf:"app"       validate:"required"`
+	Server    ServerConfig    `koanf:"server"    validate:"required"`
+	Log       LogConfig       `koanf:"log"       validate:"required"`
 	Telemetry TelemetryConfig `koanf:"telemetry"`
 	Auth      AuthConfig      `koanf:"auth"`
 }
 
 // AppConfig contains application-level settings.
 type AppConfig struct {
-	Name        string `koanf:"name" validate:"required"`
-	Version     string `koanf:"version" validate:"required"`
+	Name        string `koanf:"name"        validate:"required"`
+	Version     string `koanf:"version"     validate:"required"`
 	Environment string `koanf:"environment" validate:"required,oneof=local dev qa prod test"`
 }
 
 // ServerConfig contains HTTP server settings.
 type ServerConfig struct {
-	Port            int           `koanf:"port" validate:"required,min=1,max=65535"`
-	Host            string        `koanf:"host" validate:"required"`
-	ReadTimeout     time.Duration `koanf:"read_timeout" validate:"required,min=1s"`
-	WriteTimeout    time.Duration `koanf:"write_timeout" validate:"required,min=1s"`
-	IdleTimeout     time.Duration `koanf:"idle_timeout" validate:"required,min=1s"`
+	Port            int           `koanf:"port"             validate:"required,min=1,max=65535"`
+	Host            string        `koanf:"host"             validate:"required"`
+	ReadTimeout     time.Duration `koanf:"read_timeout"     validate:"required,min=1s"`
+	WriteTimeout    time.Duration `koanf:"write_timeout"    validate:"required,min=1s"`
+	IdleTimeout     time.Duration `koanf:"idle_timeout"     validate:"required,min=1s"`
 	ShutdownTimeout time.Duration `koanf:"shutdown_timeout" validate:"required,min=1s"`
 	MaxRequestSize  int64         `koanf:"max_request_size" validate:"required,min=1"`
 }
 
 // LogConfig contains logging settings.
 type LogConfig struct {
-	Level  string `koanf:"level" validate:"required,oneof=debug info warn error"`
+	Level  string `koanf:"level"  validate:"required,oneof=debug info warn error"`
 	Format string `koanf:"format" validate:"required,oneof=json text"`
 }
 
 // TelemetryConfig contains OpenTelemetry settings.
 type TelemetryConfig struct {
 	Enabled      bool    `koanf:"enabled"`
-	Endpoint     string  `koanf:"endpoint" validate:"required_if=Enabled true,omitempty,url"`
-	ServiceName  string  `koanf:"service_name" validate:"required_if=Enabled true"`
+	Endpoint     string  `koanf:"endpoint"      validate:"required_if=Enabled true,omitempty,url"`
+	ServiceName  string  `koanf:"service_name"  validate:"required_if=Enabled true"`
 	SamplingRate float64 `koanf:"sampling_rate" validate:"min=0,max=1"`
 }
 
 // AuthConfig contains authentication settings.
 type AuthConfig struct {
 	Enabled       bool   `koanf:"enabled"`
-	JWKSEndpoint  string `koanf:"jwks_endpoint" validate:"required_if=Enabled true,omitempty,url"`
-	Issuer        string `koanf:"issuer" validate:"required_if=Enabled true"`
-	Audience      string `koanf:"audience" validate:"required_if=Enabled true"`
+	JWKSEndpoint  string `koanf:"jwks_endpoint"  validate:"required_if=Enabled true,omitempty,url"`
+	Issuer        string `koanf:"issuer"         validate:"required_if=Enabled true"`
+	Audience      string `koanf:"audience"       validate:"required_if=Enabled true"`
 	ClaimsHeader  string `koanf:"claims_header"`
 	RolesHeader   string `koanf:"roles_header"`
 	ScopesHeader  string `koanf:"scopes_header"`
@@ -111,38 +111,44 @@ func Load(profile string) (*Config, error) {
 	k := koanf.New(".")
 
 	// 1. Load defaults
-	if err := k.Load(confmap.Provider(defaults(), "."), nil); err != nil {
+	err := k.Load(confmap.Provider(defaults(), "."), nil)
+	if err != nil {
 		return nil, fmt.Errorf("loading defaults: %w", err)
 	}
 
 	// 2. Load base config file if it exists
-	if err := loadFileIfExists(k, "configs/base.yaml"); err != nil {
+	err = loadFileIfExists(k, "configs/base.yaml")
+	if err != nil {
 		return nil, fmt.Errorf("loading base config: %w", err)
 	}
 
 	// 3. Load profile config file if it exists
 	if profile != "" {
 		profilePath := fmt.Sprintf("configs/%s.yaml", profile)
-		if err := loadFileIfExists(k, profilePath); err != nil {
+
+		err := loadFileIfExists(k, profilePath)
+		if err != nil {
 			return nil, fmt.Errorf("loading profile config %q: %w", profile, err)
 		}
 	}
 
 	// 4. Load environment variables with APP_ prefix
-	if err := k.Load(env.Provider("APP_", ".", func(s string) string {
-		// APP_SERVER_PORT -> server.port
+	err = k.Load(env.Provider("APP_", ".", func(s string) string {
 		return strings.ReplaceAll(
 			strings.ToLower(strings.TrimPrefix(s, "APP_")),
 			"_",
 			".",
 		)
-	}), nil); err != nil {
+	}), nil)
+	if err != nil {
 		return nil, fmt.Errorf("loading env vars: %w", err)
 	}
 
 	// Unmarshal into Config struct
 	var cfg Config
-	if err := k.Unmarshal("", &cfg); err != nil {
+
+	err = k.Unmarshal("", &cfg)
+	if err != nil {
 		return nil, fmt.Errorf("unmarshalling config: %w", err)
 	}
 
@@ -155,5 +161,6 @@ func loadFileIfExists(k *koanf.Koanf, path string) error {
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
 		return nil // File doesn't exist, that's fine
 	}
+
 	return k.Load(file.Provider(path), yaml.Parser())
 }
