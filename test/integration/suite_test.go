@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -139,25 +140,11 @@ func (tc *testContext) theResponseShouldContain(text string) error {
 	}
 
 	body := string(tc.responseBody)
-	if !contains(body, text) {
+	if !strings.Contains(body, text) {
 		return fmt.Errorf("response body does not contain %q.\nBody: %s", text, body)
 	}
 
 	return nil
-}
-
-// contains checks if haystack contains needle (simple substring match).
-func contains(haystack, needle string) bool {
-	return len(haystack) >= len(needle) && findSubstring(haystack, needle)
-}
-
-func findSubstring(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
 }
 
 // TestFeatures runs the GoDog BDD test suite.

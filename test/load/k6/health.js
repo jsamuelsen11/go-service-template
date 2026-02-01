@@ -2,14 +2,14 @@
  * k6 Load Test for Health Endpoints
  *
  * Usage:
- *   k6 run test/load/k6/health.js
+ *   k6 run test/load/k6/health.js                              # Run all scenarios
  *   k6 run --env BASE_URL=http://staging:8080 test/load/k6/health.js
- *   k6 run --env SCENARIO=steady_state test/load/k6/health.js
+ *   k6 run --scenario steady_state test/load/k6/health.js      # Run single scenario
  *
  * Scenarios:
- *   - steady_state: Constant 100 RPS for 5 minutes
- *   - ramp_up: Gradual increase from 0 to 500 RPS
- *   - spike: Baseline load with sudden spike
+ *   - steady_state: Constant 100 RPS for 5 minutes (starts at 0s)
+ *   - ramp_up: Gradual increase from 0 to 500 RPS (starts at 6m)
+ *   - spike: Baseline load with sudden spike (starts at 10m)
  */
 
 import http from 'k6/http';
@@ -20,6 +20,7 @@ import { Rate, Trend } from 'k6/metrics';
 const errorRate = new Rate('errors');
 const livenessLatency = new Trend('liveness_latency', true);
 const buildInfoLatency = new Trend('build_info_latency', true);
+const metricsLatency = new Trend('metrics_latency', true);
 
 // Configuration
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
@@ -84,6 +85,7 @@ export const options = {
     errors: ['rate<0.01'],
     liveness_latency: ['p(95)<50', 'p(99)<100'],
     build_info_latency: ['p(95)<50', 'p(99)<100'],
+    metrics_latency: ['p(95)<100', 'p(99)<200'],
   },
 
   // Output configuration
@@ -94,22 +96,26 @@ export const options = {
 export function steadyStateTest() {
   testLiveness();
   testBuildInfo();
+  testMetrics();
 }
 
 export function rampUpTest() {
   testLiveness();
   testBuildInfo();
+  testMetrics();
 }
 
 export function spikeTest() {
   testLiveness();
   testBuildInfo();
+  testMetrics();
 }
 
 // Default function for simple runs
 export default function () {
   testLiveness();
   testBuildInfo();
+  testMetrics();
   sleep(0.1);
 }
 
@@ -151,15 +157,18 @@ function testBuildInfo() {
 }
 
 // Metrics endpoint test
-export function testMetrics() {
+function testMetrics() {
   const url = `${BASE_URL}/-/metrics`;
   const res = http.get(url, {
     tags: { endpoint: 'metrics' },
   });
 
+  metricsLatency.add(res.timings.duration);
+
   const success = check(res, {
     'metrics status is 200': (r) => r.status === 200,
     'metrics has prometheus format': (r) => r.body.includes('go_goroutines'),
+    'metrics response time < 200ms': (r) => r.timings.duration < 200,
   });
 
   errorRate.add(!success);
