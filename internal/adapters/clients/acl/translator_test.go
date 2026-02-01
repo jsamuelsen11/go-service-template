@@ -46,10 +46,15 @@ func TestMapHTTPError_NotFound(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{"error":{"code":"NOT_FOUND","message":"user not found"}}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "get user")
+	err := MapHTTPError(resp, nil, "user-service", "get user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsNotFound(err), "expected NotFoundError")
+
+	// Verify the entityID is set correctly
+	var notFoundErr *domain.NotFoundError
+	require.True(t, errors.As(err, &notFoundErr))
+	assert.Equal(t, "user-123", notFoundErr.ID)
 }
 
 func TestMapHTTPError_Conflict(t *testing.T) {
@@ -58,7 +63,7 @@ func TestMapHTTPError_Conflict(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{"error":{"code":"CONFLICT","message":"email already exists"}}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "create user")
+	err := MapHTTPError(resp, nil, "user-service", "create user", "")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsConflict(err), "expected ConflictError")
@@ -79,7 +84,7 @@ func TestMapHTTPError_ValidationWithDetails(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(body)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "create user")
+	err := MapHTTPError(resp, nil, "user-service", "create user", "")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsValidation(err), "expected ValidationError")
@@ -95,7 +100,7 @@ func TestMapHTTPError_Forbidden(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"insufficient permissions"}}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "delete user")
+	err := MapHTTPError(resp, nil, "user-service", "delete user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsForbidden(err), "expected ForbiddenError")
@@ -107,7 +112,7 @@ func TestMapHTTPError_Unauthorized(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "get user")
+	err := MapHTTPError(resp, nil, "user-service", "get user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsForbidden(err), "expected ForbiddenError for 401")
@@ -119,7 +124,7 @@ func TestMapHTTPError_ServerError(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{"error":{"message":"internal error"}}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "get user")
+	err := MapHTTPError(resp, nil, "user-service", "get user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsUnavailable(err), "expected UnavailableError")
@@ -131,7 +136,7 @@ func TestMapHTTPError_RateLimited(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "get user")
+	err := MapHTTPError(resp, nil, "user-service", "get user", "")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsUnavailable(err), "expected UnavailableError for rate limit")
@@ -139,7 +144,7 @@ func TestMapHTTPError_RateLimited(t *testing.T) {
 }
 
 func TestMapHTTPError_CircuitOpen(t *testing.T) {
-	err := MapHTTPError(nil, clients.ErrCircuitOpen, "user-service", "get user")
+	err := MapHTTPError(nil, clients.ErrCircuitOpen, "user-service", "get user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsUnavailable(err))
@@ -147,7 +152,7 @@ func TestMapHTTPError_CircuitOpen(t *testing.T) {
 }
 
 func TestMapHTTPError_MaxRetriesExceeded(t *testing.T) {
-	err := MapHTTPError(nil, clients.ErrMaxRetriesExceeded, "user-service", "get user")
+	err := MapHTTPError(nil, clients.ErrMaxRetriesExceeded, "user-service", "get user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsUnavailable(err))
@@ -160,13 +165,13 @@ func TestMapHTTPError_SuccessReturnsNil(t *testing.T) {
 		Body:       io.NopCloser(strings.NewReader(`{}`)),
 	}
 
-	err := MapHTTPError(resp, nil, "user-service", "get user")
+	err := MapHTTPError(resp, nil, "user-service", "get user", "user-123")
 
 	assert.NoError(t, err)
 }
 
 func TestMapHTTPError_NilResponse(t *testing.T) {
-	err := MapHTTPError(nil, nil, "user-service", "get user")
+	err := MapHTTPError(nil, nil, "user-service", "get user", "user-123")
 
 	require.Error(t, err)
 	assert.True(t, domain.IsUnavailable(err))
@@ -190,11 +195,22 @@ func TestMapExternalCode(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.code, func(t *testing.T) {
-			err := MapExternalCode(tt.code, "test message", "test-service", "test op")
+			err := MapExternalCode(tt.code, "test message", "test-service", "test op", "entity-123")
 			require.Error(t, err)
 			assert.True(t, tt.expected(err), "unexpected error type for code %s", tt.code)
 		})
 	}
+}
+
+func TestMapExternalCode_NotFoundWithEntityID(t *testing.T) {
+	err := MapExternalCode(ExternalCodeNotFound, "user not found", "user-service", "get user", "user-456")
+
+	require.Error(t, err)
+	assert.True(t, domain.IsNotFound(err))
+
+	var notFoundErr *domain.NotFoundError
+	require.True(t, errors.As(err, &notFoundErr))
+	assert.Equal(t, "user-456", notFoundErr.ID)
 }
 
 // --- Translation Tests ---
@@ -232,6 +248,30 @@ func TestDecodeResponse_NilBody(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "nil")
+}
+
+func TestDecodeResponseForService_Success(t *testing.T) {
+	body := io.NopCloser(strings.NewReader(`{"id":"123"}`))
+
+	type testStruct struct {
+		ID string `json:"id"`
+	}
+
+	result, err := DecodeResponseForService[testStruct](body, "test-service")
+
+	require.NoError(t, err)
+	assert.Equal(t, "123", result.ID)
+}
+
+func TestDecodeResponseForService_Error(t *testing.T) {
+	body := io.NopCloser(strings.NewReader(`invalid json`))
+
+	type testStruct struct{}
+
+	_, err := DecodeResponseForService[testStruct](body, "test-service")
+
+	require.Error(t, err)
+	assert.True(t, domain.IsUnavailable(err), "expected UnavailableError for decode failure")
 }
 
 func TestTranslateSlice_Success(t *testing.T) {
@@ -391,6 +431,11 @@ func TestUserServiceAdapter_GetByID_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	assert.True(t, domain.IsNotFound(err))
+
+	// Verify the entityID is set correctly in the error
+	var notFoundErr *domain.NotFoundError
+	require.True(t, errors.As(err, &notFoundErr))
+	assert.Equal(t, "nonexistent", notFoundErr.ID)
 }
 
 func TestUserServiceAdapter_GetByID_ValidationError(t *testing.T) {
@@ -404,6 +449,81 @@ func TestUserServiceAdapter_GetByID_ValidationError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.True(t, domain.IsValidation(err))
+}
+
+func TestUserServiceAdapter_GetByEmail_URLEscaping(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Verify the path contains the email correctly decoded.
+		// Go's HTTP library normalizes the URL, so we check the decoded Path.
+		// The url.PathEscape in the adapter ensures special chars like + and @
+		// are transmitted safely even when they have meaning in URLs.
+		assert.Equal(t, "/api/v1/users/by-email/test+user@example.com", r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{
+			"id": "user-123",
+			"full_name": "Test User",
+			"email": "test+user@example.com",
+			"status": 1,
+			"created_at": "2024-01-15T10:30:00Z"
+		}`))
+	}))
+	defer server.Close()
+
+	cfg := testConfig(server.URL)
+	client, err := clients.New(cfg)
+	require.NoError(t, err)
+
+	adapter := NewUserServiceAdapter(client)
+
+	user, err := adapter.GetByEmail(context.Background(), "test+user@example.com")
+
+	require.NoError(t, err)
+	assert.Equal(t, "test+user@example.com", user.Email)
+}
+
+func TestUserServiceAdapter_GetByEmail_SpecialCharsInPath(t *testing.T) {
+	// Test with characters that must be escaped for valid URL paths
+	testCases := []struct {
+		name          string
+		email         string
+		expectedEmail string
+	}{
+		{"percent", "user%test@example.com", "user%test@example.com"},
+		{"slash", "user/test@example.com", "user/test@example.com"},
+		{"space", "user test@example.com", "user test@example.com"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			var receivedPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				receivedPath = r.URL.Path
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusOK)
+				_, _ = w.Write([]byte(`{
+					"id": "user-123",
+					"full_name": "Test User",
+					"email": "` + tc.expectedEmail + `",
+					"status": 1,
+					"created_at": "2024-01-15T10:30:00Z"
+				}`))
+			}))
+			defer server.Close()
+
+			cfg := testConfig(server.URL)
+			client, err := clients.New(cfg)
+			require.NoError(t, err)
+
+			adapter := NewUserServiceAdapter(client)
+			user, err := adapter.GetByEmail(context.Background(), tc.email)
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.expectedEmail, user.Email)
+			// Verify the path correctly transmitted the email
+			assert.Contains(t, receivedPath, "/api/v1/users/by-email/")
+		})
+	}
 }
 
 func TestUserServiceAdapter_TranslateUser_StatusMapping(t *testing.T) {

@@ -90,9 +90,10 @@ func ParseErrorResponse(body io.Reader) *ErrorResponse {
 //   - clientErr: Any error from the HTTP client (may be nil)
 //   - serviceName: Name of the external service for error context
 //   - operation: The operation being performed (e.g., "get user", "create order")
+//   - entityID: The ID of the entity being operated on (used for NotFoundError)
 //
 // Returns a domain error appropriate for the failure type.
-func MapHTTPError(resp *http.Response, clientErr error, serviceName, operation string) error {
+func MapHTTPError(resp *http.Response, clientErr error, serviceName, operation, entityID string) error {
 	// Handle client-level errors first (no response received)
 	if clientErr != nil {
 		return mapClientError(clientErr, serviceName, operation)
@@ -113,7 +114,7 @@ func MapHTTPError(resp *http.Response, clientErr error, serviceName, operation s
 		errResp = ParseErrorResponse(resp.Body)
 	}
 
-	return mapStatusCode(resp.StatusCode, errResp, serviceName, operation)
+	return mapStatusCode(resp.StatusCode, errResp, serviceName, operation, entityID)
 }
 
 // mapClientError translates client-level errors to domain errors.
@@ -134,7 +135,7 @@ func mapClientError(err error, serviceName, operation string) error {
 }
 
 // mapStatusCode translates HTTP status codes to domain errors.
-func mapStatusCode(status int, errResp *ErrorResponse, serviceName, operation string) error {
+func mapStatusCode(status int, errResp *ErrorResponse, serviceName, operation, entityID string) error {
 	// Get message from error response or use default
 	message := defaultMessageForStatus(status, operation)
 	if errResp != nil && errResp.GetMessage() != "" {
@@ -143,10 +144,7 @@ func mapStatusCode(status int, errResp *ErrorResponse, serviceName, operation st
 
 	switch status {
 	case http.StatusNotFound:
-		return &domain.NotFoundError{
-			Entity: serviceName,
-			ID:     message,
-		}
+		return domain.NewNotFoundError(serviceName, entityID)
 
 	case http.StatusConflict:
 		return domain.NewConflictError(serviceName, message)
@@ -207,10 +205,10 @@ func defaultMessageForStatus(status int, operation string) string {
 
 // MapExternalCode maps an external error code to a domain error.
 // Use this when the external service uses specific error codes in its response body.
-func MapExternalCode(code, message, serviceName, operation string) error {
+func MapExternalCode(code, message, serviceName, operation, entityID string) error {
 	switch code {
 	case ExternalCodeNotFound:
-		return &domain.NotFoundError{Entity: serviceName, ID: message}
+		return domain.NewNotFoundError(serviceName, entityID)
 	case ExternalCodeConflict:
 		return domain.NewConflictError(serviceName, message)
 	case ExternalCodeValidation:

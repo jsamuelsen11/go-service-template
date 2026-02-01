@@ -39,56 +39,49 @@ func (a *BaseAdapter) ServiceName() string {
 // DoRequest executes an HTTP request and handles error mapping.
 // On success, returns the response body reader (caller must close).
 // On failure, returns a mapped domain error.
-func (a *BaseAdapter) DoRequest(ctx context.Context, req *http.Request, operation string) (io.ReadCloser, error) {
+// The entityID is used for NotFoundError context.
+func (a *BaseAdapter) DoRequest(ctx context.Context, req *http.Request, operation, entityID string) (io.ReadCloser, error) {
 	resp, err := a.client.Do(ctx, req)
-	if err != nil {
-		return nil, MapHTTPError(nil, err, a.serviceName, operation)
-	}
 
-	if resp.StatusCode >= http.StatusBadRequest {
-		defer func() { _ = resp.Body.Close() }()
-
-		return nil, MapHTTPError(resp, nil, a.serviceName, operation)
-	}
-
-	return resp.Body, nil
+	return a.handleResponse(resp, err, operation, entityID)
 }
 
 // Get performs a GET request and returns the response body.
 // The path should be an absolute path starting with "/".
-func (a *BaseAdapter) Get(ctx context.Context, path, operation string) (io.ReadCloser, error) {
+// The entityID is used for NotFoundError context.
+func (a *BaseAdapter) Get(ctx context.Context, path, operation, entityID string) (io.ReadCloser, error) {
 	resp, err := a.client.Get(ctx, path)
-	if err != nil {
-		return nil, MapHTTPError(nil, err, a.serviceName, operation)
-	}
 
-	if resp.StatusCode >= http.StatusBadRequest {
-		defer func() { _ = resp.Body.Close() }()
-
-		return nil, MapHTTPError(resp, nil, a.serviceName, operation)
-	}
-
-	return resp.Body, nil
+	return a.handleResponse(resp, err, operation, entityID)
 }
 
 // Post performs a POST request and returns the response body.
-func (a *BaseAdapter) Post(ctx context.Context, path string, body io.Reader, operation string) (io.ReadCloser, error) {
+// The entityID is used for NotFoundError context (can be empty for create operations).
+func (a *BaseAdapter) Post(ctx context.Context, path string, body io.Reader, operation, entityID string) (io.ReadCloser, error) {
 	resp, err := a.client.Post(ctx, path, body)
+
+	return a.handleResponse(resp, err, operation, entityID)
+}
+
+// handleResponse centralizes HTTP response handling and error mapping.
+// This ensures consistent error handling across all request methods.
+func (a *BaseAdapter) handleResponse(resp *http.Response, err error, operation, entityID string) (io.ReadCloser, error) {
 	if err != nil {
-		return nil, MapHTTPError(nil, err, a.serviceName, operation)
+		return nil, MapHTTPError(nil, err, a.serviceName, operation, entityID)
 	}
 
 	if resp.StatusCode >= http.StatusBadRequest {
 		defer func() { _ = resp.Body.Close() }()
 
-		return nil, MapHTTPError(resp, nil, a.serviceName, operation)
+		return nil, MapHTTPError(resp, nil, a.serviceName, operation, entityID)
 	}
 
 	return resp.Body, nil
 }
 
 // DecodeResponse reads and decodes a JSON response body into the target type.
-// Closes the body after reading.
+// Closes the body after reading. Returns a plain error for decode failures.
+// Use DecodeResponseForService when you need domain-level error wrapping.
 func DecodeResponse[T any](body io.ReadCloser) (*T, error) {
 	if body == nil {
 		return nil, fmt.Errorf("response body is nil")
@@ -101,6 +94,18 @@ func DecodeResponse[T any](body io.ReadCloser) (*T, error) {
 	}
 
 	return &result, nil
+}
+
+// DecodeResponseForService reads and decodes a JSON response body into the target type,
+// returning domain.ErrUnavailable on decode failures. This is the preferred method
+// when you want consistent domain-level error handling.
+func DecodeResponseForService[T any](body io.ReadCloser, serviceName string) (*T, error) {
+	result, err := DecodeResponse[T](body)
+	if err != nil {
+		return nil, domain.NewUnavailableError(serviceName, err.Error())
+	}
+
+	return result, nil
 }
 
 // ValidateRequired checks that a required field is not empty.

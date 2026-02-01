@@ -3,6 +3,7 @@ package acl
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"time"
 
 	"github.com/jsamuelsen/go-service-template/internal/adapters/clients"
@@ -73,15 +74,15 @@ func (a *UserServiceAdapter) GetByID(ctx context.Context, id string) (*User, err
 
 	// 2. Make request via BaseAdapter (handles error mapping)
 	path := fmt.Sprintf("/api/v1/users/%s", id)
-	body, err := a.Get(ctx, path, "get user")
+	body, err := a.Get(ctx, path, "get user", id)
 	if err != nil {
 		return nil, err
 	}
 
-	// 3. Decode external response
-	extUser, err := DecodeResponse[externalUserResponse](body)
+	// 3. Decode external response using domain-aware decoder
+	extUser, err := DecodeResponseForService[externalUserResponse](body, a.ServiceName())
 	if err != nil {
-		return nil, domain.NewUnavailableError(a.ServiceName(), err.Error())
+		return nil, err
 	}
 
 	// 4. Translate to domain type
@@ -95,15 +96,17 @@ func (a *UserServiceAdapter) GetByEmail(ctx context.Context, email string) (*Use
 		return nil, err
 	}
 
-	path := fmt.Sprintf("/api/v1/users/by-email/%s", email)
-	body, err := a.Get(ctx, path, "get user by email")
+	// URL-escape the email to handle special characters like @, +, %, /
+	escapedEmail := url.PathEscape(email)
+	path := fmt.Sprintf("/api/v1/users/by-email/%s", escapedEmail)
+	body, err := a.Get(ctx, path, "get user by email", email)
 	if err != nil {
 		return nil, err
 	}
 
-	extUser, err := DecodeResponse[externalUserResponse](body)
+	extUser, err := DecodeResponseForService[externalUserResponse](body, a.ServiceName())
 	if err != nil {
-		return nil, domain.NewUnavailableError(a.ServiceName(), err.Error())
+		return nil, err
 	}
 
 	return a.translateUser(extUser)
@@ -121,14 +124,15 @@ func (a *UserServiceAdapter) List(ctx context.Context, page, pageSize int) ([]*U
 	}
 
 	path := fmt.Sprintf("/api/v1/users?page=%d&page_size=%d", page, pageSize)
-	body, err := a.Get(ctx, path, "list users")
+	// List operations don't have a single entityID, pass empty string
+	body, err := a.Get(ctx, path, "list users", "")
 	if err != nil {
 		return nil, 0, err
 	}
 
-	listResp, err := DecodeResponse[externalUserListResponse](body)
+	listResp, err := DecodeResponseForService[externalUserListResponse](body, a.ServiceName())
 	if err != nil {
-		return nil, 0, domain.NewUnavailableError(a.ServiceName(), err.Error())
+		return nil, 0, err
 	}
 
 	// Translate all users using the helper
