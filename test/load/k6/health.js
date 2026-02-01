@@ -19,7 +19,7 @@ import { Rate, Trend } from 'k6/metrics';
 // Custom metrics
 const errorRate = new Rate('errors');
 const livenessLatency = new Trend('liveness_latency', true);
-const readinessLatency = new Trend('readiness_latency', true);
+const buildInfoLatency = new Trend('build_info_latency', true);
 
 // Configuration
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
@@ -83,33 +83,33 @@ export const options = {
     // Custom metrics
     errors: ['rate<0.01'],
     liveness_latency: ['p(95)<50', 'p(99)<100'],
-    readiness_latency: ['p(95)<100', 'p(99)<200'],
+    build_info_latency: ['p(95)<50', 'p(99)<100'],
   },
 
   // Output configuration
   summaryTrendStats: ['avg', 'min', 'med', 'max', 'p(90)', 'p(95)', 'p(99)'],
 };
 
-// Test functions
+// Test functions - only test endpoints that don't hit external dependencies
 export function steadyStateTest() {
   testLiveness();
-  testReadiness();
+  testBuildInfo();
 }
 
 export function rampUpTest() {
   testLiveness();
-  testReadiness();
+  testBuildInfo();
 }
 
 export function spikeTest() {
   testLiveness();
-  testReadiness();
+  testBuildInfo();
 }
 
 // Default function for simple runs
 export default function () {
   testLiveness();
-  testReadiness();
+  testBuildInfo();
   sleep(0.1);
 }
 
@@ -131,35 +131,20 @@ function testLiveness() {
   errorRate.add(!success);
 }
 
-// Readiness endpoint test
-function testReadiness() {
-  const url = `${BASE_URL}/-/ready`;
-  const res = http.get(url, {
-    tags: { endpoint: 'readiness' },
-  });
-
-  readinessLatency.add(res.timings.duration);
-
-  const success = check(res, {
-    'readiness status is 200': (r) => r.status === 200,
-    'readiness has status field': (r) => r.body.includes('status'),
-    'readiness response time < 200ms': (r) => r.timings.duration < 200,
-  });
-
-  errorRate.add(!success);
-}
-
-// Build info endpoint test (less frequent)
-export function testBuildInfo() {
+// Build info endpoint test
+function testBuildInfo() {
   const url = `${BASE_URL}/-/build`;
   const res = http.get(url, {
     tags: { endpoint: 'build' },
   });
 
+  buildInfoLatency.add(res.timings.duration);
+
   const success = check(res, {
     'build status is 200': (r) => r.status === 200,
     'build has version': (r) => r.body.includes('version'),
     'build has commit': (r) => r.body.includes('commit'),
+    'build response time < 100ms': (r) => r.timings.duration < 100,
   });
 
   errorRate.add(!success);

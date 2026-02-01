@@ -14,7 +14,7 @@ Feature: Health Endpoints
     And the response should contain "status"
     And the response should contain "ok"
 
-  @smoke @readiness
+  @readiness @requires-network
   Scenario: Readiness probe returns OK when healthy
     When I request GET "/-/ready"
     Then the response status should be 200

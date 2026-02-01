@@ -28,7 +28,25 @@ tasks:
     cmds:
       - go mod download
       - go tool lefthook install
+      - task: setup:k6
       - echo "Setup complete. All tools available via 'go tool'. Git hooks installed."
+
+  setup:k6:
+    desc: "[Setup] Install k6 load testing tool"
+    status:
+      - command -v k6
+    cmds:
+      - cmd: |
+          if command -v brew &> /dev/null; then
+            brew install k6
+          elif command -v apt-get &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y k6
+          elif command -v choco &> /dev/null; then
+            choco install k6
+          else
+            echo "Please install k6 manually: https://grafana.com/docs/k6/latest/set-up/install-k6/"
+            exit 1
+          fi
 
   run:
     desc: "[Dev] Run the service locally with hot reload"
@@ -85,7 +103,14 @@ tasks:
       - go tool gotestsum --format {{.TEST_FORMAT}} -- -race ./...
 
   test:integration:
-    desc: "[Test] Run GoDog integration tests (requires running service)"
+    desc: "[Test] Run GoDog integration tests - smoke only (requires running service)"
+    env:
+      GODOG_TAGS: "@smoke && ~@requires-network"
+    cmds:
+      - go test -tags integration -v ./test/integration/...
+
+  test:integration:all:
+    desc: "[Test] Run all GoDog integration tests including network-dependent (requires running service)"
     cmds:
       - go test -tags integration -v ./test/integration/...
 
@@ -101,7 +126,10 @@ tasks:
       - go test -bench=. -benchmem ./test/benchmark/...
 
   test:load:
-    desc: "[Test] Run k6 load tests"
+    desc: "[Test] Run k6 load tests (requires running service)"
+    preconditions:
+      - sh: command -v k6
+        msg: "k6 is not installed. Run 'task setup' or install manually: https://grafana.com/docs/k6/latest/set-up/install-k6/"
     cmds:
       - k6 run test/load/k6/health.js
 
