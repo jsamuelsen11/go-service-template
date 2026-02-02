@@ -11,7 +11,7 @@ vars:
     sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
   BUILD_TIME:
     sh: date -u '+%Y-%m-%dT%H:%M:%SZ'
-  LDFLAGS: -s -w -X main.version={{.VERSION}} -X main.commit={{.GIT_COMMIT}} -X main.buildTime={{.BUILD_TIME}}
+  LDFLAGS: -s -w -X main.Version={{.VERSION}} -X main.Commit={{.GIT_COMMIT}} -X main.BuildTime={{.BUILD_TIME}}
 
 tasks:
   default:
