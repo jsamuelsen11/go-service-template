@@ -191,7 +191,7 @@ jobs:
           retention-days: 90
 
       - name: Run Trivy vulnerability scan
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.33.1
         with:
           image-ref: "${{ needs.build-docker.outputs.image }}@${{ needs.build-docker.outputs.digest }}"
           format: "sarif"
