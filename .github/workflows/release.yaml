@@ -74,7 +74,7 @@ jobs:
             -o "dist/${BINARY_NAME}" ./cmd/service
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: binary-${{ matrix.goos }}-${{ matrix.goarch }}
           path: dist/
@@ -181,7 +181,7 @@ jobs:
             -o cyclonedx-json=sbom-container.cdx.json
 
       - name: Upload SBOM artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: sbom
           path: |

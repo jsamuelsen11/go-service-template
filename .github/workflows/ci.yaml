@@ -81,7 +81,7 @@ jobs:
             -- -race -coverprofile=coverage.out -covermode=atomic ./...
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: test-results
@@ -89,7 +89,7 @@ jobs:
           retention-days: 7
 
       - name: Upload coverage artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: coverage
           path: coverage.out
@@ -211,7 +211,7 @@ jobs:
             -o bin/service ./cmd/service
 
       - name: Upload binary artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: service-linux-amd64
           path: bin/service
