@@ -1,7 +1,7 @@
 // Module path is a template - replace with your actual module path when using this template
 module github.com/jsamuelsen/go-service-template
 
-go 1.25.4
+go 1.25.6
 
 require (
 	github.com/cucumber/godog v0.15.1
