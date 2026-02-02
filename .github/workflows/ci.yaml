@@ -34,6 +34,12 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Prepare Go tools
+        run: |
+          # Build tools declared in go.mod tool() directive
+          go tool gofumpt -h > /dev/null 2>&1
+          go tool golangci-lint version
+
       - name: Check formatting
         run: |
           if [ -n "$(go tool gofumpt -l .)" ]; then
@@ -61,6 +67,11 @@ jobs:
 
       - name: Download dependencies
         run: go mod download
+
+      - name: Prepare Go tools
+        run: |
+          # Build tools declared in go.mod tool() directive
+          go tool gotestsum --version
 
       - name: Run tests with coverage
         run: |
@@ -112,6 +123,11 @@ jobs:
       - name: Download dependencies
         run: go mod download
 
+      - name: Prepare Go tools
+        run: |
+          # Build tools declared in go.mod tool() directive
+          go tool vacuum version
+
       - name: Validate OpenAPI spec
         run: go tool vacuum lint -r .spectral.yaml api/openapi.yaml
 
@@ -149,6 +165,11 @@ jobs:
 
       - name: Download dependencies
         run: go mod download
+
+      - name: Prepare Go tools
+        run: |
+          # Build tools declared in go.mod tool() directive
+          go tool govulncheck -version
 
       - name: Run govulncheck
         run: go tool govulncheck ./...
