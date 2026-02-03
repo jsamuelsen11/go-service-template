@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Run Service" type="GoApplicationRunConfiguration" factoryName="Go Application">
-    <module name="go-service-template" />
     <working_directory value="$PROJECT_DIR$" />
     <parameters value="" />
     <kind value="DIRECTORY" />

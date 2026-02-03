@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Debug Integration Tests (smoke)" type="GoTestRunConfiguration" factoryName="Go Test">
-    <module name="go-service-template" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-tags=integration -race" />
     <parameters value="-v" />

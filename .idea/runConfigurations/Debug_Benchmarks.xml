@@ -1,6 +1,5 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Debug Benchmarks" type="GoTestRunConfiguration" factoryName="Go Test">
-    <module name="go-service-template" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="" />
     <parameters value="-bench=. -benchmem -v" />

@@ -65,8 +65,10 @@ out/
 !runConfigurations/
 !codeStyles/
 !inspectionProfiles/
+!externalDependencies.xml
 !go.imports.xml
 !golangci.xml
+!golinter.xml
 !watcherTasks.xml
 !vcs.xml
 !encodings.xml
