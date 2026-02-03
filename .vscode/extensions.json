@@ -1,0 +1,23 @@
+{
+  "recommendations": [
+    "golang.go",
+    "task.vscode-task",
+    "ms-azuretools.vscode-docker",
+    "42crunch.vscode-openapi",
+    "stoplight.spectral",
+    "humao.rest-client",
+    "redhat.vscode-yaml",
+    "alexkrechik.cucumberautocomplete",
+    "k6.k6",
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    "esbenp.prettier-vscode",
+    "davidanson.vscode-markdownlint",
+    "timonwong.shellcheck",
+    "exiasr.hadolint",
+    "editorconfig.editorconfig",
+    "usernamehw.errorlens",
+    "gruntfuggly.todo-tree"
+  ],
+  "unwantedRecommendations": ["ms-vscode.go"]
+}

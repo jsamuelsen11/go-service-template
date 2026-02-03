@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GolangCILintConfiguration">
+    <option name="enabled" value="true" />
+    <option name="lintOnSave" value="true" />
+    <option name="configPath" value="$PROJECT_DIR$/.golangci.yml" />
+    <option name="additionalArguments" value="--timeout=5m" />
+  </component>
+</project>

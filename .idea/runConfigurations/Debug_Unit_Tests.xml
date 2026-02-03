@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug Unit Tests" type="GoTestRunConfiguration" factoryName="Go Test">
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-race" />
+    <parameters value="-v" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/jsamuelsen/go-service-template" />
+    <directory value="$PROJECT_DIR$" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <pattern value="" />
+    <EXTENSION ID="com.intellij.coverage">
+      <option name="coverageRunner" value="go" />
+    </EXTENSION>
+    <method v="2" />
+  </configuration>
+</component>

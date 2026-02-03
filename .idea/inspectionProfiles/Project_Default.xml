@@ -1,0 +1,22 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="GoAssignmentToReceiver" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoCommentStart" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoDirectComparisonOfErrors" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoDuplicateBranch" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoEmptyMap" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoErrorResultNotChecker" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="GoLinter" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoNilness" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoPlaceholderCount" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoReceiverShadowsDeclaration" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoRedundantConversion" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoRedundantSecondIndexInSlice" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoShadow" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoSimplifyBoolExpr" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="GoUnusedVariable" enabled="true" level="ERROR" enabled_by_default="true" />
+    <inspection_tool class="GolangCiLint" enabled="true" level="WARNING" enabled_by_default="true" />
+    <inspection_tool class="ShellCheck" enabled="true" level="WARNING" enabled_by_default="true" />
+  </profile>
+</component>

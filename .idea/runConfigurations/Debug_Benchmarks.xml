@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug Benchmarks" type="GoTestRunConfiguration" factoryName="Go Test">
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="" />
+    <parameters value="-bench=. -benchmem -v" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/jsamuelsen/go-service-template/test/benchmark" />
+    <directory value="$PROJECT_DIR$/test/benchmark" />
+    <filePath value="$PROJECT_DIR$/test/benchmark" />
+    <framework value="gobench" />
+    <pattern value="Benchmark.*" />
+    <EXTENSION ID="com.intellij.coverage">
+      <option name="coverageRunner" value="go" />
+    </EXTENSION>
+    <method v="2" />
+  </configuration>
+</component>

@@ -1,0 +1,21 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Debug Integration Tests (smoke)" type="GoTestRunConfiguration" factoryName="Go Test">
+    <working_directory value="$PROJECT_DIR$" />
+    <go_parameters value="-tags=integration -race" />
+    <parameters value="-v" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/jsamuelsen/go-service-template/test/integration" />
+    <directory value="$PROJECT_DIR$/test/integration" />
+    <filePath value="$PROJECT_DIR$/test/integration" />
+    <framework value="gotest" />
+    <pattern value="" />
+    <envs>
+      <env name="BASE_URL" value="http://localhost:8080" />
+      <env name="GODOG_TAGS" value="@smoke &amp;&amp; ~@requires-network" />
+    </envs>
+    <EXTENSION ID="com.intellij.coverage">
+      <option name="coverageRunner" value="go" />
+    </EXTENSION>
+    <method v="2" />
+  </configuration>
+</component>

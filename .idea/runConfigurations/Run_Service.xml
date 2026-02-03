@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Run Service" type="GoApplicationRunConfiguration" factoryName="Go Application">
+    <working_directory value="$PROJECT_DIR$" />
+    <parameters value="" />
+    <kind value="DIRECTORY" />
+    <package value="github.com/jsamuelsen/go-service-template/cmd/service" />
+    <directory value="$PROJECT_DIR$/cmd/service" />
+    <filePath value="$PROJECT_DIR$" />
+    <envs>
+      <env name="APP_ENVIRONMENT" value="local" />
+    </envs>
+    <EXTENSION ID="com.intellij.coverage">
+      <option name="coverageRunner" value="go" />
+    </EXTENSION>
+    <method v="2" />
+  </configuration>
+</component>

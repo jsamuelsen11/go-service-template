@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectTasksOptions">
+    <TaskOptions isEnabled="false">
+      <option name="arguments" value="fmt" />
+      <option name="checkSyntaxErrors" value="true" />
+      <option name="description" value="Format Go files with gofumpt on save" />
+      <option name="exitCodeBehavior" value="ERROR" />
+      <option name="fileExtension" value="go" />
+      <option name="immediateSync" value="true" />
+      <option name="name" value="gofumpt (via task)" />
+      <option name="output" value="" />
+      <option name="outputFilters">
+        <array />
+      </option>
+      <option name="outputFromStdout" value="false" />
+      <option name="program" value="task" />
+      <option name="runOnExternalChanges" value="false" />
+      <option name="scopeName" value="Project Files" />
+      <option name="trackOnlyRoot" value="true" />
+      <option name="workingDir" value="$PROJECT_DIR$" />
+      <envs />
+    </TaskOptions>
+    <TaskOptions isEnabled="true">
+      <option name="arguments" value="openapi:validate" />
+      <option name="checkSyntaxErrors" value="true" />
+      <option name="description" value="Validate OpenAPI spec on save" />
+      <option name="exitCodeBehavior" value="ERROR" />
+      <option name="fileExtension" value="yaml" />
+      <option name="immediateSync" value="true" />
+      <option name="name" value="OpenAPI Validate (via task)" />
+      <option name="output" value="" />
+      <option name="outputFilters">
+        <array />
+      </option>
+      <option name="outputFromStdout" value="false" />
+      <option name="program" value="task" />
+      <option name="runOnExternalChanges" value="false" />
+      <option name="scopeName" value="api" />
+      <option name="trackOnlyRoot" value="true" />
+      <option name="workingDir" value="$PROJECT_DIR$" />
+      <envs />
+    </TaskOptions>
+  </component>
+</project>
