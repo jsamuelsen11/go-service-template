@@ -1,0 +1,106 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch Service",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/service",
+      "env": {
+        "APP_ENVIRONMENT": "local"
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "showLog": true
+    },
+    {
+      "name": "Launch Service (Debug Logging)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "${workspaceFolder}/cmd/service",
+      "env": {
+        "APP_ENVIRONMENT": "local",
+        "LOG_LEVEL": "debug"
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "showLog": true
+    },
+    {
+      "name": "Debug Package Tests",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "args": ["-test.v"],
+      "buildFlags": "-race",
+      "showLog": true
+    },
+    {
+      "name": "Debug Test at Cursor",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${fileDirname}",
+      "args": ["-test.v", "-test.run", "^${selectedText}$"],
+      "buildFlags": "-race",
+      "showLog": true
+    },
+    {
+      "name": "Debug Integration Tests (smoke)",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/test/integration",
+      "buildFlags": "-tags=integration",
+      "args": ["-test.v"],
+      "env": {
+        "BASE_URL": "http://localhost:8080",
+        "GODOG_TAGS": "@smoke && ~@requires-network"
+      },
+      "showLog": true
+    },
+    {
+      "name": "Debug Integration Tests (all)",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/test/integration",
+      "buildFlags": "-tags=integration",
+      "args": ["-test.v"],
+      "env": {
+        "BASE_URL": "http://localhost:8080"
+      },
+      "showLog": true
+    },
+    {
+      "name": "Debug Benchmarks",
+      "type": "go",
+      "request": "launch",
+      "mode": "test",
+      "program": "${workspaceFolder}/test/benchmark",
+      "args": ["-test.bench=.", "-test.benchmem", "-test.v"],
+      "showLog": true
+    },
+    {
+      "name": "Attach to Local Process",
+      "type": "go",
+      "request": "attach",
+      "mode": "local",
+      "processId": "${command:pickProcess}"
+    },
+    {
+      "name": "Attach to Remote (Container)",
+      "type": "go",
+      "request": "attach",
+      "mode": "remote",
+      "remotePath": "/app",
+      "port": 2345,
+      "host": "127.0.0.1",
+      "showLog": true,
+      "trace": "verbose"
+    }
+  ]
+}

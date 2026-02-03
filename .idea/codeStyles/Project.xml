@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectCodeStyleConfiguration">
+    <code_scheme name="Project" version="173">
+      <!-- Honor EditorConfig settings -->
+      <option name="ENABLE_EDITORCONFIG_SUPPORT" value="true" />
+
+      <!-- Go-specific settings aligned with gofumpt -->
+      <GoCodeStyleSettings>
+        <option name="LINE_COMMENT_AT_FIRST_COLUMN" value="false" />
+        <option name="LINE_COMMENT_ADD_SPACE" value="true" />
+        <option name="RUN_GO_FMT_ON_REFORMAT" value="true" />
+        <option name="RUN_GOFUMPT_ON_REFORMAT" value="true" />
+        <option name="USE_GOIMPORTS" value="true" />
+      </GoCodeStyleSettings>
+
+      <!-- YAML settings (Taskfile, configs) -->
+      <codeStyleSettings language="yaml">
+        <indentOptions>
+          <option name="INDENT_SIZE" value="2" />
+          <option name="TAB_SIZE" value="2" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+        </indentOptions>
+      </codeStyleSettings>
+
+      <!-- JSON settings -->
+      <codeStyleSettings language="JSON">
+        <indentOptions>
+          <option name="INDENT_SIZE" value="2" />
+          <option name="TAB_SIZE" value="2" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+        </indentOptions>
+      </codeStyleSettings>
+
+      <!-- Markdown settings -->
+      <codeStyleSettings language="Markdown">
+        <option name="WRAP_ON_TYPING" value="1" />
+        <option name="RIGHT_MARGIN" value="120" />
+      </codeStyleSettings>
+
+      <!-- Shell script settings -->
+      <codeStyleSettings language="Shell Script">
+        <indentOptions>
+          <option name="INDENT_SIZE" value="2" />
+          <option name="TAB_SIZE" value="2" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+        </indentOptions>
+      </codeStyleSettings>
+
+      <!-- Dockerfile settings -->
+      <codeStyleSettings language="Dockerfile">
+        <indentOptions>
+          <option name="INDENT_SIZE" value="4" />
+          <option name="TAB_SIZE" value="4" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+        </indentOptions>
+      </codeStyleSettings>
+
+      <!-- Gherkin/Cucumber settings -->
+      <codeStyleSettings language="Gherkin">
+        <indentOptions>
+          <option name="INDENT_SIZE" value="2" />
+          <option name="TAB_SIZE" value="2" />
+          <option name="USE_TAB_CHARACTER" value="false" />
+        </indentOptions>
+      </codeStyleSettings>
+    </code_scheme>
+  </component>
+</project>

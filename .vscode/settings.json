@@ -1,0 +1,177 @@
+{
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Task Extension (Taskfile.yml integration)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "task.outputTo": "terminal",
+  "task.tree.nesting": true,
+  "task.tree.sort": "default",
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Go Configuration
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Language Server
+  "go.useLanguageServer": true,
+
+  // Linting - use golangci-lint with project config
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": ["--config=.golangci.yml", "--timeout=5m"],
+  "go.lintOnSave": "workspace",
+
+  // Formatting - use gofumpt via gopls
+  "go.formatTool": "gofumpt",
+  "gopls": {
+    "formatting.gofumpt": true,
+    "ui.semanticTokens": true,
+    "ui.codelenses": {
+      "gc_details": true,
+      "generate": true,
+      "regenerate_cgo": true,
+      "test": true,
+      "tidy": true,
+      "upgrade_dependency": true,
+      "vendor": false
+    },
+    "ui.diagnostic.analyses": {
+      "nilness": true,
+      "shadow": true,
+      "unusedparams": true,
+      "unusedwrite": true
+    }
+  },
+
+  // Testing
+  "go.buildTags": "integration",
+  "go.testFlags": ["-race", "-v"],
+  "go.testEnvVars": {},
+  "go.coverOnSave": false,
+  "go.coverOnSingleTest": true,
+  "go.coverOnSingleTestFile": true,
+  "go.testExplorer.enable": true,
+  "go.testExplorer.showOutput": true,
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Editor Settings (complement .editorconfig)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": "explicit"
+  },
+
+  // Go files - tabs per gofmt standard
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "golang.go",
+    "editor.insertSpaces": false,
+    "editor.tabSize": 4
+  },
+  "[go.mod]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "golang.go"
+  },
+  "[go.sum]": {
+    "editor.formatOnSave": false
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // YAML Settings (Taskfile, OpenAPI, GitHub workflows)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "[yaml]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  },
+  "yaml.schemas": {
+    "https://taskfile.dev/schema.json": ["Taskfile.yml", "Taskfile.yaml"],
+    "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml"
+  },
+  "yaml.customTags": ["!reference sequence"],
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // JSON Settings
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "[json]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+  "[jsonc]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.tabSize": 2
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Markdown Settings
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "[markdown]": {
+    "editor.formatOnSave": true,
+    "editor.wordWrap": "on",
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Other Languages
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // OpenAPI/Spectral
+  "spectral.rulesetFile": ".spectral.yaml",
+
+  // Docker
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+  },
+
+  // Shell scripts
+  "[shellscript]": {
+    "editor.tabSize": 2
+  },
+
+  // Gherkin/Cucumber feature files
+  "[feature]": {
+    "editor.tabSize": 2
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // File Associations
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "files.associations": {
+    "*.feature": "gherkin",
+    "Taskfile.yml": "yaml",
+    "lefthook.yml": "yaml",
+    ".golangci.yml": "yaml",
+    ".mockery.yaml": "yaml",
+    ".spectral.yaml": "yaml",
+    ".air.toml": "toml"
+  },
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // Search & File Exclusions
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  "files.exclude": {
+    "**/bin": true,
+    "**/vendor": true,
+    "**/.git": true,
+    "**/node_modules": true
+  },
+  "files.watcherExclude": {
+    "**/bin/**": true,
+    "**/vendor/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/bin": true,
+    "**/vendor": true,
+    "**/node_modules": true,
+    "coverage.*": true,
+    "go.sum": true
+  }
+}

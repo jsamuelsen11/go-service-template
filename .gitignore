@@ -38,9 +38,28 @@ tmp/
 .temp/
 temp/
 
-# Editor/IDE
-# .idea/
-# .vscode/
+# ═══════════════════════════════════════════════════════════════════════════════
+# IDE - VS Code (keep shared configs)
+# ═══════════════════════════════════════════════════════════════════════════════
+.vscode/*
+!.vscode/settings.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# IDE - JetBrains/GoLand (keep shared configs)
+# ═══════════════════════════════════════════════════════════════════════════════
+.idea/*
+!.idea/.gitignore
+!.idea/runConfigurations/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/go.imports.xml
+!.idea/golangci.xml
+!.idea/watcherTasks.xml
+!.idea/vcs.xml
+!.idea/encodings.xml
+!.idea/externalDependencies.xml
 
 # Beads export state
 .beads/export-state/
