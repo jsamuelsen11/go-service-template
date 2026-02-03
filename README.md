@@ -103,6 +103,8 @@ curl http://localhost:8080/-/live
 
 ## Task Commands
 
+> **Tip:** Run `task` with no arguments to see all available commands with descriptions.
+
 ### Setup & Development
 
 ```bash
@@ -135,6 +137,7 @@ task test:e2e          # Run full E2E test suite
 task test:benchmark    # Run Go benchmarks
 task test:load         # Run k6 load tests
 task coverage          # Generate test coverage report
+task coverage:view     # Generate coverage and open in browser
 ```
 
 ### CI/CD
@@ -153,8 +156,9 @@ task docker:run        # Run Docker container locally
 ### OpenAPI
 
 ```bash
-task openapi:validate  # Validate OpenAPI spec
-task openapi:diff      # Check for OpenAPI drift
+task openapi:validate   # Validate OpenAPI spec
+task openapi:diff       # Check for breaking changes vs main
+task openapi:changelog  # Generate changelog vs main
 ```
 
 ## Configuration
