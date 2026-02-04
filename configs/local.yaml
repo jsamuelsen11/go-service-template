@@ -1,12 +1,19 @@
 # Local development configuration
-# Human-readable logs, relaxed timeouts, telemetry disabled
+# Pretty terminal logs + rolling JSON files, relaxed timeouts, telemetry disabled
 
 app:
   environment: local
 
 log:
   level: debug
-  format: text
+  format: pretty
+  file:
+    enabled: true
+    path: ./logs/app.log
+    max_size: 10
+    max_backups: 2
+    max_age: 7
+    compress: false
 
 server:
   read_timeout: 60s

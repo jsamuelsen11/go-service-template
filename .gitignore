@@ -38,6 +38,9 @@ tmp/
 .temp/
 temp/
 
+# Log files
+logs/
+
 # ═══════════════════════════════════════════════════════════════════════════════
 # IDE - VS Code (keep shared configs)
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -64,6 +67,9 @@ temp/
 
 # Beads export state
 .beads/export-state/
+
+# Serena files
+.serena/
 
 # Node modules (for local tooling like prettier/spectral)
 node_modules/

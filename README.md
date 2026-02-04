@@ -1,7 +1,7 @@
 # Go Service Template
 
 [![CI](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/jsamuelsen/go-service-template/branch/main/graph/badge.svg)](https://codecov.io/gh/jsamuelsen/go-service-template)
+[![Coverage](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/badge.svg)](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/report.json)
 [![Go Version](https://img.shields.io/badge/Go-1.25.6-00ADD8?logo=go)](https://go.dev/)
 
 Enterprise-grade Go backend service template implementing Clean/Hexagonal Architecture.
@@ -103,6 +103,8 @@ curl http://localhost:8080/-/live
 
 ## Task Commands
 
+> **Tip:** Run `task` with no arguments to see all available commands with descriptions.
+
 ### Setup & Development
 
 ```bash
@@ -135,6 +137,7 @@ task test:e2e          # Run full E2E test suite
 task test:benchmark    # Run Go benchmarks
 task test:load         # Run k6 load tests
 task coverage          # Generate test coverage report
+task coverage:view     # Generate coverage and open in browser
 ```
 
 ### CI/CD
@@ -153,8 +156,9 @@ task docker:run        # Run Docker container locally
 ### OpenAPI
 
 ```bash
-task openapi:validate  # Validate OpenAPI spec
-task openapi:diff      # Check for OpenAPI drift
+task openapi:validate   # Validate OpenAPI spec
+task openapi:diff       # Check for breaking changes vs main
+task openapi:changelog  # Generate changelog vs main
 ```
 
 ## Configuration

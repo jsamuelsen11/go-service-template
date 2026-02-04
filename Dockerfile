@@ -1,17 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
 # ============================================================================
-# Stage: deps - Download and cache dependencies
-# ============================================================================
-FROM golang:1.25-alpine AS deps
-
-WORKDIR /app
-
-COPY go.mod go.sum* ./
-RUN --mount=type=cache,target=/go/pkg/mod \
-    go mod download
-
-# ============================================================================
 # Stage: build - Compile the application
 # ============================================================================
 FROM golang:1.25-alpine AS build
@@ -24,17 +13,21 @@ ARG TARGETARCH=amd64
 
 WORKDIR /app
 
-# Copy cached dependencies
-COPY --from=deps /go/pkg/mod /go/pkg/mod
+# Copy go.mod first for better layer caching
+COPY go.mod go.sum* ./
+
+# Download dependencies (cached by Docker layer)
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
 # Copy source
 COPY . .
 
-# Build binary
+# Build binary with cache mounts for faster rebuilds
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
-    -ldflags="-s -w -X main.version=${VERSION} -X main.commit=${GIT_COMMIT} -X main.buildTime=${BUILD_TIME}" \
+    -ldflags="-s -w -X main.Version=${VERSION} -X main.Commit=${GIT_COMMIT} -X main.BuildTime=${BUILD_TIME}" \
     -o /app/service \
     ./cmd/service
 
@@ -45,7 +38,10 @@ FROM golang:1.25-alpine AS test
 
 WORKDIR /app
 
-COPY --from=deps /go/pkg/mod /go/pkg/mod
+COPY go.mod go.sum* ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+
 COPY . .
 
 RUN --mount=type=cache,target=/go/pkg/mod \
@@ -85,7 +81,7 @@ USER nonroot:nonroot
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD ["/service", "healthcheck"]
+# Note: HEALTHCHECK removed - let orchestrator (K8s) handle health probes
+# The service exposes /-/live and /-/ready endpoints for liveness/readiness
 
 ENTRYPOINT ["/service"]

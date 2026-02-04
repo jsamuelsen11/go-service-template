@@ -15,16 +15,74 @@ vars:
 
 tasks:
   default:
-    desc: Show available tasks
+    desc: Show available tasks with descriptions
+    silent: true
     cmds:
-      - task --list
+      - |
+        # Colors (works in bash/zsh, degrades gracefully)
+        BOLD='\033[1m'
+        DIM='\033[2m'
+        CYAN='\033[36m'
+        GREEN='\033[32m'
+        YELLOW='\033[33m'
+        RESET='\033[0m'
+
+        printf "${BOLD}Go Service Template Commands${RESET}\n"
+        printf "\n"
+        printf "${YELLOW}Setup:${RESET}\n"
+        printf "  ${GREEN}task setup${RESET}              Install all dev dependencies and git hooks\n"
+        printf "  ${GREEN}task setup:k6${RESET}           Install k6 load testing tool\n"
+        printf "\n"
+        printf "${YELLOW}Development:${RESET}\n"
+        printf "  ${GREEN}task run${RESET}                Run service with hot reload (air)\n"
+        printf "  ${GREEN}task generate${RESET}           Run go generate (mocks, etc.)\n"
+        printf "  ${GREEN}task build${RESET}              Build production binary\n"
+        printf "  ${GREEN}task clean${RESET}              Remove build artifacts\n"
+        printf "\n"
+        printf "${YELLOW}Code Quality:${RESET}\n"
+        printf "  ${GREEN}task fmt${RESET}                Format all Go code (gofumpt)\n"
+        printf "  ${GREEN}task lint${RESET}               Run golangci-lint\n"
+        printf "  ${GREEN}task vuln${RESET}               Run govulncheck for vulnerabilities\n"
+        printf "\n"
+        printf "${YELLOW}Testing:${RESET}\n"
+        printf "  ${GREEN}task test${RESET}               Run unit tests with race detection\n"
+        printf "  ${GREEN}task test:integration${RESET}   Run BDD integration tests (smoke)\n"
+        printf "  ${GREEN}task test:integration:all${RESET}  Run all BDD integration tests\n"
+        printf "  ${GREEN}task test:benchmark${RESET}     Run Go benchmarks\n"
+        printf "  ${GREEN}task test:load${RESET}          Run k6 load tests\n"
+        printf "  ${GREEN}task test:e2e${RESET}           Run full E2E suite\n"
+        printf "  ${GREEN}task coverage${RESET}           Generate test coverage report\n"
+        printf "  ${GREEN}task coverage:report${RESET}    Generate rich coverage report (octocov)\n"
+        printf "  ${GREEN}task coverage:view${RESET}      Generate coverage HTML and open in browser\n"
+        printf "\n"
+        printf "${YELLOW}Docker:${RESET}\n"
+        printf "  ${GREEN}task docker:build${RESET}       Build Docker image\n"
+        printf "  ${GREEN}task docker:run${RESET}         Run container locally\n"
+        printf "\n"
+        printf "${YELLOW}OpenAPI:${RESET}\n"
+        printf "  ${GREEN}task openapi:validate${RESET}   Validate OpenAPI spec (Spectral)\n"
+        printf "  ${GREEN}task openapi:diff${RESET}       Check for breaking changes vs main\n"
+        printf "  ${GREEN}task openapi:changelog${RESET}  Generate changelog vs main\n"
+        printf "\n"
+        printf "${YELLOW}CI/CD:${RESET}\n"
+        printf "  ${GREEN}task ci${RESET}                 Run full CI pipeline locally\n"
+        printf "\n"
+        printf "${CYAN}Options:${RESET}\n"
+        printf "  ${DIM}TEST_FORMAT=dots${RESET}        Change test output (dots|pkgname|standard-verbose)\n"
+        printf "  ${DIM}BASE_REF=origin/develop${RESET} Override OpenAPI diff base branch\n"
+        printf "  ${DIM}HOST_PORT=9090${RESET}          Override docker:run host port (default: 8080)\n"
+        printf "\n"
+        printf "${CYAN}Examples:${RESET}\n"
+        printf "  ${DIM}task run${RESET}                      Start dev server with hot reload\n"
+        printf "  ${DIM}task test TEST_FORMAT=dots${RESET}    Run tests with minimal output\n"
+        printf "  ${DIM}task ci${RESET}                       Run full CI checks locally\n"
 
   # ─────────────────────────────────────────────────────────────
   # Setup & Development
   # ─────────────────────────────────────────────────────────────
 
   setup:
-    desc: "[Setup] Install all development dependencies"
+    desc: Install all development dependencies
     cmds:
       - go mod download
       - go tool lefthook install
@@ -32,7 +90,7 @@ tasks:
       - echo "Setup complete. All tools available via 'go tool'. Git hooks installed."
 
   setup:k6:
-    desc: "[Setup] Install k6 load testing tool"
+    desc: Install k6 load testing tool
     status:
       - command -v k6
     cmds:
@@ -49,12 +107,12 @@ tasks:
           fi
 
   run:
-    desc: "[Dev] Run the service locally with hot reload"
+    desc: Run the service locally with hot reload
     cmds:
       - go tool air -c .air.toml || go run {{.MAIN_PKG}}
 
   generate:
-    desc: "[Dev] Run go generate (mocks, etc.)"
+    desc: Run go generate (mocks, etc.)
     cmds:
       - go generate ./...
       - go tool mockery
@@ -64,12 +122,12 @@ tasks:
   # ─────────────────────────────────────────────────────────────
 
   build:
-    desc: "[Build] Build production binary with version info"
+    desc: Build production binary with version info
     cmds:
       - go build -ldflags "{{.LDFLAGS}}" -o bin/{{.BINARY_NAME}} {{.MAIN_PKG}}
 
   clean:
-    desc: "[Build] Clean build artifacts"
+    desc: Clean build artifacts
     cmds:
       - rm -rf bin/
       - rm -f {{.COVERAGE_FILE}} coverage.html
@@ -79,17 +137,17 @@ tasks:
   # ─────────────────────────────────────────────────────────────
 
   fmt:
-    desc: "[Quality] Format all Go code"
+    desc: Format all Go code
     cmds:
       - go tool gofumpt -w .
 
   lint:
-    desc: "[Quality] Run golangci-lint"
+    desc: Run golangci-lint
     cmds:
       - go tool golangci-lint run --timeout 5m ./...
 
   vuln:
-    desc: "[Quality] Run govulncheck"
+    desc: Run govulncheck
     cmds:
       - go tool govulncheck ./...
 
@@ -98,54 +156,70 @@ tasks:
   # ─────────────────────────────────────────────────────────────
 
   test:
-    desc: "[Test] Run unit tests (override format with TEST_FORMAT=dots|pkgname|standard-verbose)"
+    desc: Run unit tests with race detection
     cmds:
       - go tool gotestsum --format {{.TEST_FORMAT}} -- -race ./...
 
   test:integration:
-    desc: "[Test] Run GoDog integration tests - smoke only (requires running service)"
+    desc: Run GoDog integration tests (smoke only)
     env:
       GODOG_TAGS: "@smoke && ~@requires-network"
     cmds:
       - go test -tags integration -v ./test/integration/...
 
   test:integration:all:
-    desc: "[Test] Run all GoDog integration tests including network-dependent (requires running service)"
+    desc: Run all GoDog integration tests
     cmds:
       - go test -tags integration -v ./test/integration/...
 
   test:e2e:
-    desc: "[Test] Run full E2E test suite"
+    desc: Run full E2E test suite
     cmds:
       - task: test
       - task: test:integration
 
   test:benchmark:
-    desc: "[Test] Run Go benchmarks"
+    desc: Run Go benchmarks
     cmds:
       - go test -bench=. -benchmem ./test/benchmark/...
 
   test:load:
-    desc: "[Test] Run k6 load tests (requires running service)"
+    desc: Run k6 load tests (requires running service)
     preconditions:
       - sh: command -v k6
-        msg: "k6 is not installed. Run 'task setup' or install manually: https://grafana.com/docs/k6/latest/set-up/install-k6/"
+        msg: "k6 is not installed. Run 'task setup' or install manually."
     cmds:
       - k6 run test/load/k6/health.js
 
   coverage:
-    desc: "[Test] Generate test coverage report"
+    desc: Generate test coverage report
     cmds:
       - go tool gotestsum --format {{.TEST_FORMAT}} -- -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic ./...
-      - go tool cover -html={{.COVERAGE_FILE}} -o coverage.html
       - go tool cover -func={{.COVERAGE_FILE}}
+
+  coverage:report:
+    desc: Generate coverage report with octocov
+    deps: [coverage]
+    cmds:
+      - go tool octocov --config .octocov.yml
+
+  coverage:view:
+    desc: Generate coverage HTML and open in browser
+    deps: [coverage]
+    cmds:
+      - go tool cover -html={{.COVERAGE_FILE}} -o coverage.html
+      - cmd: |
+          {{if eq OS "darwin"}}open coverage.html
+          {{else if eq OS "windows"}}start coverage.html
+          {{else}}xdg-open coverage.html 2>/dev/null || echo "Open coverage.html manually"{{end}}
+        silent: true
 
   # ─────────────────────────────────────────────────────────────
   # CI/CD
   # ─────────────────────────────────────────────────────────────
 
   ci:
-    desc: "[CI] Run full CI pipeline locally"
+    desc: Run full CI pipeline locally
     cmds:
       - task: fmt
       - task: lint
@@ -158,25 +232,51 @@ tasks:
   # ─────────────────────────────────────────────────────────────
 
   docker:build:
-    desc: "[Docker] Build Docker image"
+    desc: Build Docker image
     cmds:
       - docker build -t {{.BINARY_NAME}}:{{.VERSION}} --build-arg VERSION={{.VERSION}} --build-arg GIT_COMMIT={{.GIT_COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} .
 
   docker:run:
-    desc: "[Docker] Run Docker container locally"
+    desc: Run Docker container locally
+    vars:
+      HOST_PORT: '{{.HOST_PORT | default "8080"}}'
     cmds:
-      - docker run --rm -p 8080:8080 {{.BINARY_NAME}}:{{.VERSION}}
+      - docker run --rm -p {{.HOST_PORT}}:8080 {{.BINARY_NAME}}:{{.VERSION}}
 
   # ─────────────────────────────────────────────────────────────
   # OpenAPI
   # ─────────────────────────────────────────────────────────────
 
   openapi:validate:
-    desc: "[OpenAPI] Validate OpenAPI spec"
+    desc: Validate OpenAPI spec
     cmds:
       - go tool vacuum lint -r .spectral.yaml api/openapi.yaml
 
   openapi:diff:
-    desc: "[OpenAPI] Check for OpenAPI drift"
+    desc: Check for breaking changes vs main branch
+    vars:
+      BASE_REF: '{{.BASE_REF | default "origin/main"}}'
     cmds:
-      - cmd: echo "TODO Implement OpenAPI drift detection"
+      - cmd: |
+          BASELINE=$(mktemp)
+          trap "rm -f $BASELINE" EXIT
+          if git show {{.BASE_REF}}:api/openapi.yaml > "$BASELINE" 2>/dev/null; then
+            echo "Comparing api/openapi.yaml against {{.BASE_REF}}..."
+            go tool oasdiff breaking "$BASELINE" api/openapi.yaml && echo "No breaking changes detected."
+          else
+            echo "Baseline not found in {{.BASE_REF}}, skipping diff."
+          fi
+
+  openapi:changelog:
+    desc: Generate changelog vs main branch
+    vars:
+      BASE_REF: '{{.BASE_REF | default "origin/main"}}'
+    cmds:
+      - cmd: |
+          BASELINE=$(mktemp)
+          trap "rm -f $BASELINE" EXIT
+          if git show {{.BASE_REF}}:api/openapi.yaml > "$BASELINE" 2>/dev/null; then
+            go tool oasdiff changelog "$BASELINE" api/openapi.yaml
+          else
+            echo "Baseline not found in {{.BASE_REF}}"
+          fi

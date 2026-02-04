@@ -61,11 +61,19 @@ func run() error {
 	}
 
 	// 3. Initialize logging
-	logger := logging.New(logging.Config{
+	logger := logging.New(&logging.Config{
 		Level:   cfg.Log.Level,
 		Format:  cfg.Log.Format,
 		Service: cfg.App.Name,
 		Version: cfg.App.Version,
+		File: logging.FileConfig{
+			Enabled:    cfg.Log.File.Enabled,
+			Path:       cfg.Log.File.Path,
+			MaxSizeMB:  cfg.Log.File.MaxSizeMB,
+			MaxBackups: cfg.Log.File.MaxBackups,
+			MaxAgeDays: cfg.Log.File.MaxAgeDays,
+			Compress:   cfg.Log.File.Compress,
+		},
 	})
 	slog.SetDefault(logger)
 

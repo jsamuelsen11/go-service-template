@@ -1,0 +1,31 @@
+root = '.'
+tmp_dir = '.tmp'
+
+[build]
+bin = '.tmp/service'
+cmd = 'go build -o .tmp/service ./cmd/service'
+delay = 1000
+exclude_dir = ['bin', '.tmp', '.git', '.idea', '.vscode', 'node_modules', 'vendor', 'test', 'docs', 'api', 'configs', '.github', '.beads']
+exclude_regex = ['_test\.go$', '_mock\.go$']
+include_dir = ['cmd', 'internal', 'configs']
+include_ext = ['go', 'yaml', 'yml']
+kill_delay = '0s'
+send_interrupt = true
+stop_on_error = true
+
+[color]
+build = 'yellow'
+main = 'magenta'
+runner = 'green'
+watcher = 'cyan'
+
+[log]
+main_only = false
+time = false
+
+[misc]
+clean_on_exit = true
+
+[screen]
+clear_on_rebuild = true
+keep_scroll = true
