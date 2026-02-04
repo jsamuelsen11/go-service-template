@@ -182,28 +182,28 @@ func TestConfig_RetryConfiguration(t *testing.T) {
 // configuration affects client behavior as expected.
 func TestConfig_CircuitBreakerConfiguration(t *testing.T) {
 	tests := []struct {
-		name               string
-		maxFailures        int
-		failuresToTrigger  int
-		expectCircuitOpen  bool
+		name              string
+		maxFailures       int
+		failuresToTrigger int
+		expectCircuitOpen bool
 	}{
 		{
-			name:               "circuit stays closed with few failures",
-			maxFailures:        5,
-			failuresToTrigger:  2,
-			expectCircuitOpen:  false,
+			name:              "circuit stays closed with few failures",
+			maxFailures:       5,
+			failuresToTrigger: 2,
+			expectCircuitOpen: false,
 		},
 		{
-			name:               "circuit opens at threshold",
-			maxFailures:        3,
-			failuresToTrigger:  3,
-			expectCircuitOpen:  true,
+			name:              "circuit opens at threshold",
+			maxFailures:       3,
+			failuresToTrigger: 3,
+			expectCircuitOpen: true,
 		},
 		{
-			name:               "circuit opens after exceeding threshold",
-			maxFailures:        2,
-			failuresToTrigger:  4,
-			expectCircuitOpen:  true,
+			name:              "circuit opens after exceeding threshold",
+			maxFailures:       2,
+			failuresToTrigger: 4,
+			expectCircuitOpen: true,
 		},
 	}
 
