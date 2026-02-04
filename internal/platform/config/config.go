@@ -34,6 +34,15 @@ const (
 
 	// DefaultClientCircuitHalfOpenLimit is the default successes to close circuit.
 	DefaultClientCircuitHalfOpenLimit = 3
+
+	// DefaultLogFileMaxSizeMB is the default max log file size in megabytes.
+	DefaultLogFileMaxSizeMB = 100
+
+	// DefaultLogFileMaxBackups is the default number of old log files to retain.
+	DefaultLogFileMaxBackups = 3
+
+	// DefaultLogFileMaxAgeDays is the default max days to retain old log files.
+	DefaultLogFileMaxAgeDays = 28
 )
 
 // Config is the root configuration structure.
@@ -66,8 +75,19 @@ type ServerConfig struct {
 
 // LogConfig contains logging settings.
 type LogConfig struct {
-	Level  string `koanf:"level"  validate:"required,oneof=debug info warn error"`
-	Format string `koanf:"format" validate:"required,oneof=json text"`
+	Level  string        `koanf:"level"  validate:"required,oneof=debug info warn error"`
+	Format string        `koanf:"format" validate:"required,oneof=json text pretty"`
+	File   LogFileConfig `koanf:"file"`
+}
+
+// LogFileConfig contains rolling log file settings.
+type LogFileConfig struct {
+	Enabled    bool   `koanf:"enabled"`
+	Path       string `koanf:"path"       validate:"required_if=Enabled true"`
+	MaxSizeMB  int    `koanf:"max_size"   validate:"omitempty,min=1,max=1024"`
+	MaxBackups int    `koanf:"max_backups" validate:"omitempty,min=0,max=100"`
+	MaxAgeDays int    `koanf:"max_age"    validate:"omitempty,min=0,max=365"`
+	Compress   bool   `koanf:"compress"`
 }
 
 // TelemetryConfig contains OpenTelemetry settings.
@@ -127,8 +147,14 @@ func defaults() map[string]any {
 		"server.shutdown_timeout": "10s",
 		"server.max_request_size": DefaultMaxRequestSize,
 
-		"log.level":  "info",
-		"log.format": "json",
+		"log.level":            "info",
+		"log.format":           "json",
+		"log.file.enabled":     false,
+		"log.file.path":        "./logs/app.log",
+		"log.file.max_size":    DefaultLogFileMaxSizeMB,
+		"log.file.max_backups": DefaultLogFileMaxBackups,
+		"log.file.max_age":     DefaultLogFileMaxAgeDays,
+		"log.file.compress":    true,
 
 		"telemetry.enabled":       false,
 		"telemetry.endpoint":      "",
