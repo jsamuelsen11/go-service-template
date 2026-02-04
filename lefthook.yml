@@ -16,6 +16,8 @@ pre-commit:
       run: go tool golangci-lint run --fix --config=.golangci.yml ./...
       stage_fixed: true
 
+    # gofumpt is needed separately because golangci-lint skips files with
+    # build tags (e.g., //go:build integration) unless explicitly enabled
     gofumpt:
       glob: "*.go"
       run: go tool gofumpt -w {staged_files}
