@@ -1,7 +1,7 @@
 # Go Service Template
 
 [![CI](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml)
-[![codecov](https://codecov.io/gh/jsamuelsen/go-service-template/branch/main/graph/badge.svg)](https://codecov.io/gh/jsamuelsen/go-service-template)
+[![Coverage](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/badge.svg)](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/report.json)
 [![Go Version](https://img.shields.io/badge/Go-1.25.6-00ADD8?logo=go)](https://go.dev/)
 
 Enterprise-grade Go backend service template implementing Clean/Hexagonal Architecture.

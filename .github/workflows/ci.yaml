@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write # For octocov to push badge to branch
   pull-requests: write
   checks: write
   security-events: write
@@ -95,16 +95,13 @@ jobs:
           path: coverage.out
           retention-days: 7
 
-      - name: Upload to Codecov
-        uses: codecov/codecov-action@v5
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        with:
-          files: coverage.out
-          fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
-
       - name: Generate coverage summary
         run: go tool cover -func=coverage.out
+
+      - name: Run octocov
+        uses: k1LoW/octocov-action@v1
+        with:
+          config: .octocov.yml
 
   openapi:
     name: OpenAPI Validation

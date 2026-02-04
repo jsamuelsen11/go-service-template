@@ -9,6 +9,7 @@ This document maps the Go tools used in this project to their IDE integrations.
 | **golangci-lint** | Linting (22+ linters)          | `golang.go` (built-in)             | Built-in           |
 | **gofumpt**       | Formatting (stricter gofmt)    | `golang.go` (via gopls)            | File Watcher       |
 | **gotestsum**     | Test runner with better output | `golang.go` (Test Explorer)        | N/A (use CLI)      |
+| **octocov**       | Rich coverage reports          | N/A (use CLI)                      | N/A (use CLI)      |
 | **govulncheck**   | Vulnerability scanning         | N/A (use CLI)                      | Built-in (2023.3+) |
 | **mockery**       | Mock generation                | N/A (use CLI)                      | N/A (use CLI)      |
 | **air**           | Hot reload                     | N/A (use terminal)                 | N/A (use terminal) |
@@ -108,6 +109,19 @@ task vuln
 ```
 
 GoLand 2023.3+ has built-in integration. VS Code users run via CLI.
+
+### octocov
+
+Rich coverage reports with code-to-test ratio metrics. Works locally and in CI:
+
+```bash
+task coverage         # Generate coverage profile
+task coverage:report  # Rich terminal report with octocov
+task coverage:view    # Open HTML coverage in browser
+```
+
+In CI, octocov automatically comments on PRs and adds to job summaries.
+Configured via `.octocov.yml`.
 
 ### mockery
 

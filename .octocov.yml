@@ -1,0 +1,38 @@
+# octocov configuration
+# https://github.com/k1LoW/octocov
+
+coverage:
+  # Path to the Go coverage profile
+  paths:
+    - coverage.out
+
+# Code-to-test ratio metrics
+codeToTestRatio:
+  code:
+    - "**/*.go"
+    - "!**/*_test.go"
+    - "!**/mock_*.go"
+    - "!**/mocks/**"
+  test:
+    - "**/*_test.go"
+
+# Add comment to pull requests with coverage report
+comment:
+  enable: true
+  if: is_pull_request
+
+# Add to GitHub Actions job summary
+summary:
+  enable: true
+  if: true
+
+# Diff coverage for PRs - show coverage of changed lines
+diff:
+  enable: true
+  if: is_pull_request
+
+# Push coverage report and badge to central repository branch
+# Badge will be available at: https://raw.githubusercontent.com/{owner}/{repo}/octocov/badge.svg
+push:
+  if: is_default_branch
+  branch: octocov
