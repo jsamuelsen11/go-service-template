@@ -16,11 +16,6 @@ pre-commit:
       run: go tool golangci-lint run --fix --config=.golangci.yml ./...
       stage_fixed: true
 
-    gofumpt:
-      glob: "*.go"
-      run: go tool gofumpt -w {staged_files}
-      stage_fixed: true
-
     actionlint:
       glob: ".github/workflows/*.{yaml,yml}"
       run: go tool actionlint {staged_files}
