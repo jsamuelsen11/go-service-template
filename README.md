@@ -280,6 +280,7 @@ Generates an HTML coverage report at `coverage.html`.
 
 | Document                                     | Description                                            |
 | -------------------------------------------- | ------------------------------------------------------ |
+| [Contributing](CONTRIBUTING.md)              | Contribution guide, code standards, PR process         |
 | [Architecture](docs/ARCHITECTURE.md)         | System design, layer descriptions, middleware pipeline |
 | [ADRs](docs/adr/README.md)                   | Architecture Decision Records with context & rationale |
 | [Playbook](docs/playbook/README.md)          | Step-by-step how-to guides for common tasks            |

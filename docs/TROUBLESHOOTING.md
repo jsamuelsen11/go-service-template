@@ -26,6 +26,20 @@ This guide helps diagnose and resolve common issues with the Go Service Template
   - [Connection Pool Exhaustion](#connection-pool-exhaustion)
     - [Too Many Open Connections](#too-many-open-connections)
     - [Connection Timeouts](#connection-timeouts)
+  - [Build Problems](#build-problems)
+    - [Go Module Issues](#go-module-issues)
+    - [Build Failures](#build-failures)
+    - [CGO Issues](#cgo-issues)
+  - [Test Failures](#test-failures)
+    - [Unit Test Failures](#unit-test-failures)
+    - [Integration Test Failures](#integration-test-failures)
+    - [Benchmark Test Issues](#benchmark-test-issues)
+  - [Tool Installation Issues](#tool-installation-issues)
+    - [Go Tool Not Found](#go-tool-not-found)
+    - [Mise and Go Version Issues](#mise-and-go-version-issues)
+    - [Lefthook Not Working](#lefthook-not-working)
+    - [k6 Not Installed](#k6-not-installed)
+    - [Docker Issues](#docker-issues)
 
 ---
 
@@ -717,4 +731,607 @@ telnet <component-host> <port>
    ```bash
    # Look for "Connection: keep-alive" in responses
    curl -v http://localhost:8080/api/endpoint 2>&1 | grep -i connection
+   ```
+
+---
+
+## Build Problems
+
+### Go Module Issues
+
+**Symptoms:**
+
+| Symptom              | Example                                        |
+| -------------------- | ---------------------------------------------- |
+| Missing dependencies | `cannot find package "github.com/..."`         |
+| Version conflicts    | `ambiguous import: found package in two paths` |
+| Checksum mismatch    | `verifying: checksum mismatch`                 |
+| Module not found     | `module not found`                             |
+
+**Causes:**
+
+| Cause                 | Description                           |
+| --------------------- | ------------------------------------- |
+| Stale module cache    | Cached modules don't match go.sum     |
+| Corrupted go.sum      | Checksum file out of sync             |
+| Private module access | Missing credentials for private repos |
+| Proxy issues          | GOPROXY not reachable                 |
+
+**Solutions:**
+
+1. **Clean module cache and re-download:**
+
+   ```bash
+   go clean -modcache
+   go mod download
+   ```
+
+2. **Tidy modules:**
+
+   ```bash
+   go mod tidy
+   ```
+
+3. **Verify checksums:**
+
+   ```bash
+   go mod verify
+   ```
+
+4. **Update dependencies:**
+
+   ```bash
+   go get -u ./...
+   go mod tidy
+   ```
+
+5. **Check proxy settings:**
+
+   ```bash
+   # View current proxy
+   go env GOPROXY
+
+   # Use direct access if proxy has issues
+   GOPROXY=direct go mod download
+   ```
+
+---
+
+### Build Failures
+
+**Symptoms:**
+
+| Symptom           | Example                           |
+| ----------------- | --------------------------------- |
+| Compilation error | `undefined: SomeFunction`         |
+| Type mismatch     | `cannot use X (type A) as type B` |
+| Import cycle      | `import cycle not allowed`        |
+| Missing generated | `undefined: MockSomeInterface`    |
+
+**Causes:**
+
+| Cause                  | Description                      |
+| ---------------------- | -------------------------------- |
+| Missing generated code | Mocks or generated files missing |
+| Wrong Go version       | Syntax not supported             |
+| Stale build cache      | Cached artifacts out of date     |
+| Missing dependencies   | go.mod not updated               |
+
+**Solutions:**
+
+1. **Regenerate mocks and generated code:**
+
+   ```bash
+   task generate
+   git status  # Check for new/modified generated files
+   ```
+
+2. **Verify Go version matches go.mod:**
+
+   ```bash
+   go version
+   # Should match: go 1.25.6
+
+   # If wrong version, use mise to install correct version
+   mise use go@1.25.6
+   ```
+
+3. **Clean build cache:**
+
+   ```bash
+   go clean -cache
+   task build
+   ```
+
+4. **Re-download dependencies:**
+
+   ```bash
+   go mod download
+   ```
+
+---
+
+### CGO Issues
+
+**Symptoms:**
+
+| Symptom                 | Example                             |
+| ----------------------- | ----------------------------------- |
+| CGO disabled errors     | `cgo: C compiler not found`         |
+| Missing C compiler      | `gcc: command not found`            |
+| Cross-compilation fails | Architecture-specific linker errors |
+
+**Causes:**
+
+- CGO required but C compiler not installed
+- Cross-compiling without disabling CGO
+- Missing system libraries
+
+**Solutions:**
+
+1. **Disable CGO (if not needed):**
+
+   ```bash
+   CGO_ENABLED=0 task build
+   CGO_ENABLED=0 go build ./...
+   ```
+
+2. **Install C compiler (if CGO needed):**
+
+   ```bash
+   # macOS
+   xcode-select --install
+
+   # Ubuntu/Debian
+   sudo apt-get install build-essential
+
+   # Alpine
+   apk add gcc musl-dev
+
+   # Fedora/RHEL
+   sudo dnf install gcc
+   ```
+
+3. **Cross-compilation without CGO:**
+
+   ```bash
+   # Build for Linux from macOS
+   GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build ./...
+   ```
+
+---
+
+## Test Failures
+
+### Unit Test Failures
+
+**Symptoms:**
+
+| Symptom              | Example                           |
+| -------------------- | --------------------------------- |
+| Test assertion fails | `expected X, got Y`               |
+| Race condition       | `WARNING: DATA RACE`              |
+| Timeout              | `panic: test timed out after 30s` |
+| Missing mocks        | `undefined: MockSomeInterface`    |
+
+**Causes:**
+
+| Cause          | Description                       |
+| -------------- | --------------------------------- |
+| Code bug       | Logic error in implementation     |
+| Race condition | Concurrent access to shared state |
+| Slow test      | Test takes too long               |
+| Outdated mocks | Mocks don't match interface       |
+
+**Solutions:**
+
+1. **Run specific test with verbose output:**
+
+   ```bash
+   go test -v -run TestSpecificName ./path/to/package/...
+   ```
+
+2. **Run with race detector (default in task test):**
+
+   ```bash
+   go test -race ./...
+   ```
+
+3. **Increase timeout:**
+
+   ```bash
+   go test -timeout 5m ./...
+   ```
+
+4. **Regenerate mocks:**
+
+   ```bash
+   task generate
+   ```
+
+5. **Debug a specific test:**
+
+   ```bash
+   # With verbose output
+   go test -v -run TestName ./pkg/...
+
+   # With debug logging
+   go test -v -run TestName ./pkg/... 2>&1 | less
+   ```
+
+---
+
+### Integration Test Failures
+
+**Symptoms:**
+
+| Symptom                | Example                                                   |
+| ---------------------- | --------------------------------------------------------- |
+| Connection refused     | `dial tcp 127.0.0.1:8080: connect: connection refused`    |
+| Service not ready      | `Get "http://localhost:8080/-/ready": connection refused` |
+| Test data not found    | Gherkin step not matching                                 |
+| Feature file not found | `no feature file provided`                                |
+
+**Causes:**
+
+| Cause               | Description                              |
+| ------------------- | ---------------------------------------- |
+| Service not running | Integration tests require running server |
+| Wrong port          | Service running on different port        |
+| Missing test data   | Gherkin steps not implemented            |
+
+**Solutions:**
+
+1. **Ensure service is running first:**
+
+   ```bash
+   # Terminal 1: Start service
+   task run
+
+   # Terminal 2: Run integration tests
+   task test:integration
+   ```
+
+2. **Check service health:**
+
+   ```bash
+   curl http://localhost:8080/-/live
+   ```
+
+3. **Run specific scenario by tag:**
+
+   ```bash
+   GODOG_TAGS="@specific-tag" task test:integration
+   ```
+
+4. **Run all integration tests (not just smoke):**
+
+   ```bash
+   task test:integration:all
+   ```
+
+5. **Check test configuration:**
+
+   ```bash
+   # Override base URL if service is on different port
+   BASE_URL=http://localhost:9090 task test:integration
+   ```
+
+---
+
+### Benchmark Test Issues
+
+**Symptoms:**
+
+| Symptom              | Example                             |
+| -------------------- | ----------------------------------- |
+| No benchmarks run    | `testing: warning: no tests to run` |
+| Inconsistent results | Wildly varying benchmark times      |
+| Benchmark not found  | `no matching benchmarks`            |
+
+**Causes:**
+
+| Cause               | Description                       |
+| ------------------- | --------------------------------- |
+| Wrong file location | Benchmark not in test/benchmark/  |
+| Wrong function name | Not prefixed with `Benchmark`     |
+| System noise        | Other processes affecting results |
+
+**Solutions:**
+
+1. **Verify benchmark file location:**
+
+   ```bash
+   ls test/benchmark/
+   ```
+
+2. **Run specific benchmark:**
+
+   ```bash
+   go test -bench=BenchmarkSpecific -benchmem ./test/benchmark/...
+   ```
+
+3. **For consistent results, run multiple times:**
+
+   ```bash
+   go test -bench=. -benchmem -count=5 ./test/benchmark/...
+   ```
+
+4. **Benchmark function naming:**
+
+   ```go
+   // Correct: starts with "Benchmark"
+   func BenchmarkHandler(b *testing.B) { ... }
+
+   // Wrong: won't be recognized
+   func TestBenchmarkHandler(b *testing.B) { ... }
+   ```
+
+---
+
+## Tool Installation Issues
+
+### Go Tool Not Found
+
+**Symptoms:**
+
+| Symptom             | Example                            |
+| ------------------- | ---------------------------------- |
+| Tool not found      | `go tool golangci-lint: not found` |
+| Command not in PATH | `command not found: golangci-lint` |
+
+**Causes:**
+
+| Cause               | Description               |
+| ------------------- | ------------------------- |
+| Setup not run       | `task setup` not executed |
+| Tools not in go.mod | Tool directives missing   |
+| Go bin not in PATH  | GOBIN not in PATH         |
+
+**Solutions:**
+
+1. **Re-run setup:**
+
+   ```bash
+   task setup
+   ```
+
+2. **Verify tools are in go.mod:**
+
+   ```bash
+   grep "tool" go.mod
+   ```
+
+3. **Download tools:**
+
+   ```bash
+   go mod download
+   ```
+
+4. **Run tool directly:**
+
+   ```bash
+   # Using go tool (preferred)
+   go tool golangci-lint run ./...
+
+   # Or install globally
+   go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+   ```
+
+---
+
+### Mise and Go Version Issues
+
+**Symptoms:**
+
+| Symptom          | Example                             |
+| ---------------- | ----------------------------------- |
+| Wrong Go version | Build errors, syntax not recognized |
+| mise not found   | `mise: command not found`           |
+| Version mismatch | `go.mod requires go 1.25.6`         |
+
+**Causes:**
+
+| Cause                   | Description                   |
+| ----------------------- | ----------------------------- |
+| mise not installed      | Version manager not set up    |
+| Wrong Go version active | Different version in PATH     |
+| Shell not configured    | mise not initialized in shell |
+
+**Solutions:**
+
+1. **Install mise:**
+
+   ```bash
+   curl https://mise.run | sh
+   ```
+
+2. **Initialize in shell (add to ~/.bashrc or ~/.zshrc):**
+
+   ```bash
+   eval "$(mise activate bash)"  # or zsh
+   ```
+
+3. **Install correct Go version:**
+
+   ```bash
+   mise use go@1.25.6
+   ```
+
+4. **Verify version:**
+
+   ```bash
+   go version
+   # Expected: go version go1.25.6 ...
+   ```
+
+5. **Check mise status:**
+
+   ```bash
+   mise doctor
+   mise list
+   ```
+
+---
+
+### Lefthook Not Working
+
+**Symptoms:**
+
+| Symptom           | Example                        |
+| ----------------- | ------------------------------ |
+| Hooks not running | Commits succeed without checks |
+| Hook errors       | `lefthook: command not found`  |
+| Hooks outdated    | New hooks not executing        |
+
+**Causes:**
+
+| Cause                | Description               |
+| -------------------- | ------------------------- |
+| Hooks not installed  | `task setup` not run      |
+| Hooks outdated       | lefthook.yml changed      |
+| Hook scripts missing | .git/hooks/ files deleted |
+
+**Solutions:**
+
+1. **Reinstall hooks:**
+
+   ```bash
+   go tool lefthook install
+   ```
+
+2. **Verify hooks are installed:**
+
+   ```bash
+   ls -la .git/hooks/
+   # Should show: pre-commit, commit-msg, pre-push
+   ```
+
+3. **Run hooks manually to debug:**
+
+   ```bash
+   go tool lefthook run pre-commit
+   ```
+
+4. **Enable verbose mode:**
+
+   ```bash
+   LEFTHOOK_VERBOSE=1 git commit -m "test"
+   ```
+
+5. **Check lefthook checksum:**
+
+   ```bash
+   cat .git/info/lefthook.checksum
+   ```
+
+---
+
+### k6 Not Installed
+
+**Symptoms:**
+
+| Symptom         | Example                                |
+| --------------- | -------------------------------------- |
+| Load tests fail | `k6: command not found`                |
+| Task errors     | `task: Failed to run task "test:load"` |
+
+**Causes:**
+
+- k6 not installed on system
+- k6 not in PATH
+
+**Solutions:**
+
+1. **Install via task:**
+
+   ```bash
+   task setup:k6
+   ```
+
+2. **Manual installation:**
+
+   ```bash
+   # macOS
+   brew install k6
+
+   # Ubuntu/Debian
+   sudo gpg -k
+   sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+     --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+   echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+     | sudo tee /etc/apt/sources.list.d/k6.list
+   sudo apt-get update
+   sudo apt-get install k6
+
+   # Windows
+   choco install k6
+   ```
+
+3. **Verify installation:**
+
+   ```bash
+   k6 version
+   ```
+
+---
+
+### Docker Issues
+
+**Symptoms:**
+
+| Symptom             | Example                                     |
+| ------------------- | ------------------------------------------- |
+| hadolint hook fails | `Cannot connect to the Docker daemon`       |
+| docker:build fails  | `docker: command not found`                 |
+| Permission denied   | `permission denied while trying to connect` |
+
+**Causes:**
+
+| Cause                | Description                  |
+| -------------------- | ---------------------------- |
+| Docker not running   | Docker daemon not started    |
+| Docker not installed | Docker Desktop not installed |
+| Permission issues    | User not in docker group     |
+
+**Solutions:**
+
+1. **Start Docker daemon:**
+
+   ```bash
+   # macOS/Windows: Start Docker Desktop from applications
+
+   # Linux
+   sudo systemctl start docker
+   ```
+
+2. **Verify Docker is running:**
+
+   ```bash
+   docker ps
+   ```
+
+3. **Add user to docker group (Linux):**
+
+   ```bash
+   sudo usermod -aG docker $USER
+   # Log out and back in for changes to take effect
+   ```
+
+4. **Skip hadolint temporarily (if Docker unavailable):**
+
+   ```bash
+   LEFTHOOK=0 git commit -m "message"
+   ```
+
+5. **Install Docker:**
+
+   ```bash
+   # macOS
+   brew install --cask docker
+
+   # Ubuntu
+   sudo apt-get install docker.io
+
+   # Or download Docker Desktop from https://www.docker.com/products/docker-desktop
    ```
