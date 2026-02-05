@@ -107,11 +107,12 @@ func run() error {
 
 	// 6. Create HTTP client for downstream services
 	httpClient, err := clients.New(&clients.Config{
-		BaseURL:     "https://api.quotable.io",
-		ServiceName: "quote-service",
+		BaseURL:     cfg.Services.Quote.BaseURL,
+		ServiceName: cfg.Services.Quote.Name,
 		Timeout:     cfg.Client.Timeout,
 		Retry:       cfg.Client.Retry,
 		Circuit:     cfg.Client.CircuitBreaker,
+		Transport:   cfg.Client.Transport,
 		Logger:      logger,
 	})
 	if err != nil {

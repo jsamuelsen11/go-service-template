@@ -32,20 +32,11 @@ const (
 	// httpStatusCategoryDivisor divides status code to get category (2xx, 4xx, 5xx).
 	httpStatusCategoryDivisor = 100
 
-	// backoffJitterFactor is the jitter percentage for backoff calculation (±25%).
-	backoffJitterFactor = 0.25
-
 	// defaultTimeout is the default request timeout if not configured.
 	defaultTimeout = 30 * time.Second
 
-	// transportMaxIdleConns is the maximum number of idle connections.
-	transportMaxIdleConns = 100
-
-	// transportMaxIdleConnsPerHost is the maximum idle connections per host.
-	transportMaxIdleConnsPerHost = 10
-
-	// transportIdleConnTimeout is the idle connection timeout.
-	transportIdleConnTimeout = 90 * time.Second
+	// defaultJitterFactor is the fallback jitter percentage if not configured.
+	defaultJitterFactor = 0.25
 
 	// jitterRangeMultiplier converts rand [0,1) to [-1,1) for symmetric jitter.
 	jitterRangeMultiplier = 2
@@ -68,6 +59,9 @@ type Config struct {
 
 	// Circuit configures circuit breaker behavior.
 	Circuit config.CircuitBreakerConfig
+
+	// Transport configures HTTP transport pool settings.
+	Transport config.TransportConfig
 
 	// AuthFunc is an optional function to inject authentication into requests.
 	// It is called for each request attempt (including retries).
@@ -160,13 +154,13 @@ func New(cfg *Config) (*Client, error) {
 		return nil, fmt.Errorf("creating request counter: %w", err)
 	}
 
-	// Create HTTP client with timeout
+	// Create HTTP client with timeout and configured transport
 	httpClient := &http.Client{
 		Timeout: cfg.Timeout,
 		Transport: &http.Transport{
-			MaxIdleConns:        transportMaxIdleConns,
-			MaxIdleConnsPerHost: transportMaxIdleConnsPerHost,
-			IdleConnTimeout:     transportIdleConnTimeout,
+			MaxIdleConns:        cfg.Transport.MaxIdleConns,
+			MaxIdleConnsPerHost: cfg.Transport.MaxIdleConnsPerHost,
+			IdleConnTimeout:     cfg.Transport.IdleConnTimeout,
 		},
 	}
 
@@ -428,9 +422,15 @@ func (c *Client) calculateBackoff(attempt int) time.Duration {
 		backoff = float64(c.cfg.Retry.MaxInterval)
 	}
 
-	// Add jitter (±25%)
+	// Get jitter factor from config, fallback to default if not set
+	jitterFactor := c.cfg.Retry.JitterFactor
+	if jitterFactor == 0 {
+		jitterFactor = defaultJitterFactor
+	}
+
+	// Add jitter (±configured percentage)
 	jitterMultiplier := rand.Float64()*jitterRangeMultiplier - 1 //nolint:gosec // No need for crypto-grade randomness
-	jitter := backoff * backoffJitterFactor * jitterMultiplier
+	jitter := backoff * jitterFactor * jitterMultiplier
 	backoff += jitter
 
 	return time.Duration(backoff)

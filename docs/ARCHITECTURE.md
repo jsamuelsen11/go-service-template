@@ -17,6 +17,7 @@ This document describes the architecture of the Go Service Template, which imple
       - [Application Layer (`/internal/app/`)](#application-layer-internalapp)
       - [Adapters Layer (`/internal/adapters/`)](#adapters-layer-internaladapters)
       - [Platform Layer (`/internal/platform/`)](#platform-layer-internalplatform)
+    - [Scaling to Multiple Domains](#scaling-to-multiple-domains)
     - [Context](#context)
   - [Middleware Pipeline](#middleware-pipeline)
     - [Inbound Middleware (HTTP Server)](#inbound-middleware-http-server)
@@ -327,6 +328,300 @@ The **Anti-Corruption Layer** protects the domain from external service represen
 | `config/`    | Configuration loading and validation |
 | `logging/`   | Structured logging setup             |
 | `telemetry/` | OpenTelemetry tracing and metrics    |
+
+### Scaling to Multiple Domains
+
+As services grow, they often need to manage multiple bounded contexts or sub-domains. This
+section describes how to organize multiple domains within the hexagonal architecture while
+maintaining clear boundaries.
+
+#### When to Introduce Multiple Domains
+
+Consider splitting into multiple domains when:
+
+- **Distinct business concepts**: The service handles clearly separate business areas
+  (e.g., Orders and Inventory)
+- **Different rates of change**: Some areas evolve frequently while others are stable
+- **Team boundaries**: Different teams own different areas of functionality
+- **Complex entity relationships**: Entities become heavily interconnected
+
+> **Warning**: Don't prematurely split. Start with a single domain and extract when
+> complexity demands it.
+
+#### Directory Structure Options
+
+##### Option 1: Domain-Centric Organization (Recommended)
+
+Organize by domain first, then by layer within each domain:
+
+```text
+internal/
+├── domain/
+│   ├── order/              # Order bounded context
+│   │   ├── order.go        # Order entity
+│   │   ├── line_item.go    # LineItem entity
+│   │   └── errors.go       # Order-specific errors
+│   ├── inventory/          # Inventory bounded context
+│   │   ├── product.go
+│   │   ├── stock.go
+│   │   └── errors.go
+│   └── shared/             # Shared domain concepts
+│       └── money.go        # Value objects used across domains
+├── ports/
+│   ├── order/              # Order service/client ports
+│   │   └── services.go
+│   ├── inventory/          # Inventory service/client ports
+│   │   └── services.go
+│   └── health.go           # Cross-cutting ports
+├── app/
+│   ├── order/              # Order application services
+│   │   └── order_service.go
+│   └── inventory/          # Inventory application services
+│       └── inventory_service.go
+├── adapters/
+│   ├── http/
+│   │   ├── handlers/
+│   │   │   ├── order/      # Order HTTP handlers
+│   │   │   └── inventory/  # Inventory HTTP handlers
+│   │   └── dto/
+│   │       ├── order/      # Order DTOs
+│   │       └── inventory/  # Inventory DTOs
+│   └── clients/acl/
+│       ├── order/          # Order external client adapters
+│       └── inventory/      # Inventory external client adapters
+└── platform/               # Remains flat (cross-cutting)
+```
+
+**Advantages**: Clear domain boundaries visible in directory structure. Easy to locate all
+code related to a specific domain. Aligns with DDD bounded context thinking.
+
+##### Option 2: Layer-Centric Organization
+
+Keep the existing flat structure but use naming conventions:
+
+```text
+internal/
+├── domain/
+│   ├── order.go
+│   ├── order_errors.go
+│   ├── inventory_product.go
+│   ├── inventory_stock.go
+│   └── inventory_errors.go
+├── ports/
+│   ├── order_services.go
+│   └── inventory_services.go
+├── app/
+│   ├── order_service.go
+│   └── inventory_service.go
+└── adapters/http/handlers/
+    ├── order.go
+    └── inventory.go
+```
+
+**Advantages**: Simpler for small services (2-3 domains). Less directory nesting.
+
+**When to use**: When you have few domains and prefer simplicity over explicit boundaries.
+
+#### Cross-Domain Communication
+
+Domains should communicate through well-defined interfaces, not by directly accessing each
+other's internals.
+
+##### Pattern 1: Application Service Orchestration
+
+The application layer coordinates between domains:
+
+```go
+// app/fulfillment/fulfillment_service.go
+type FulfillmentService struct {
+    orderService     *order.OrderService
+    inventoryService *inventory.InventoryService
+    logger           *slog.Logger
+}
+
+func (s *FulfillmentService) FulfillOrder(ctx context.Context, orderID string) error {
+    // Get order from order domain
+    ord, err := s.orderService.GetOrder(ctx, orderID)
+    if err != nil {
+        return err
+    }
+
+    // Reserve inventory from inventory domain
+    for _, item := range ord.Items {
+        if err := s.inventoryService.Reserve(ctx, item.ProductID, item.Quantity); err != nil {
+            return fmt.Errorf("reserving inventory: %w", err)
+        }
+    }
+
+    // Update order status
+    return s.orderService.MarkFulfilled(ctx, orderID)
+}
+```
+
+**When to use**: For synchronous operations where the orchestrating service needs to
+coordinate multiple domains in a transaction-like manner.
+
+##### Pattern 2: Domain Events
+
+Domains publish events that other domains subscribe to:
+
+```go
+// domain/order/events.go
+type OrderCreatedEvent struct {
+    OrderID   string
+    Items     []OrderItem
+    CreatedAt time.Time
+}
+
+func (e OrderCreatedEvent) EventType() string { return "order.created" }
+
+// app/inventory/inventory_service.go
+func (s *InventoryService) HandleOrderCreated(
+    ctx context.Context,
+    event order.OrderCreatedEvent,
+) error {
+    for _, item := range event.Items {
+        if err := s.Reserve(ctx, item.ProductID, item.Quantity); err != nil {
+            return err
+        }
+    }
+    return nil
+}
+```
+
+**When to use**: For asynchronous, loosely-coupled communication. Enables eventual
+consistency and better fault isolation.
+
+#### Shared Kernel Pattern
+
+When domains need common types (value objects, shared identifiers), create a shared kernel:
+
+```go
+// domain/shared/money.go
+package shared
+
+import "errors"
+
+// Money represents a monetary value with currency.
+// This is a value object shared across domains.
+type Money struct {
+    Amount   int64  // In smallest currency unit (cents)
+    Currency string // ISO 4217 code
+}
+
+func (m Money) Add(other Money) (Money, error) {
+    if m.Currency != other.Currency {
+        return Money{}, errors.New("currency mismatch")
+    }
+    return Money{Amount: m.Amount + other.Amount, Currency: m.Currency}, nil
+}
+```
+
+**Rules for shared kernel**:
+
+- Only value objects and simple types
+- No entities or services
+- Changes require agreement from all consuming domains
+- Keep it minimal
+
+#### Domain Boundary Visualization
+
+```mermaid
+%%{init: {'theme': 'neutral', 'themeVariables': { 'fontSize': '14px' }}}%%
+flowchart TB
+    subgraph External["External World"]
+        HTTP(["HTTP Clients"])
+    end
+
+    subgraph Adapters["Adapters Layer"]
+        HTTPHandlers["HTTP Handlers"]
+    end
+
+    subgraph App["Application Layer"]
+        subgraph OrderApp["Order Application"]
+            OrderSvc["OrderService"]
+        end
+        subgraph InventoryApp["Inventory Application"]
+            InvSvc["InventoryService"]
+        end
+        subgraph FulfillmentApp["Fulfillment (Orchestration)"]
+            FulfillSvc["FulfillmentService"]
+        end
+    end
+
+    subgraph Ports["Ports Layer"]
+        OrderPorts{{"Order Ports"}}
+        InvPorts{{"Inventory Ports"}}
+    end
+
+    subgraph Domain["Domain Layer"]
+        subgraph OrderDomain["Order Domain"]
+            Order["Order Entity"]
+        end
+        subgraph InventoryDomain["Inventory Domain"]
+            Product["Product Entity"]
+            Stock["Stock Entity"]
+        end
+        subgraph SharedKernel["Shared Kernel"]
+            Money["Money VO"]
+        end
+    end
+
+    HTTP --> HTTPHandlers
+    HTTPHandlers --> OrderSvc
+    HTTPHandlers --> InvSvc
+
+    FulfillSvc --> OrderSvc
+    FulfillSvc --> InvSvc
+
+    OrderSvc --> OrderPorts
+    OrderSvc --> Order
+
+    InvSvc --> InvPorts
+    InvSvc --> Product
+    InvSvc --> Stock
+
+    Order --> Money
+    Product --> Money
+
+    classDef domain fill:#84cc16,stroke:#65a30d,color:#fff
+    classDef ports fill:#a855f7,stroke:#9333ea,color:#fff
+    classDef app fill:#0ea5e9,stroke:#0284c7,color:#fff
+    classDef adapter fill:#10b981,stroke:#059669,color:#fff
+    classDef external fill:#64748b,stroke:#475569,color:#fff
+    classDef shared fill:#f59e0b,stroke:#d97706,color:#fff
+
+    class Order,Product,Stock domain
+    class OrderPorts,InvPorts ports
+    class OrderSvc,InvSvc,FulfillSvc app
+    class HTTPHandlers adapter
+    class HTTP external
+    class Money shared
+```
+
+#### Decision Guide: When to Split
+
+| Signal                                  | Action                                         |
+| --------------------------------------- | ---------------------------------------------- |
+| Single entity file > 500 lines          | Consider extracting sub-entities               |
+| Multiple unrelated use cases in one svc | Split into separate application services       |
+| Circular dependencies between files     | Extract shared concepts or introduce ports     |
+| Team conflicts on same files            | Align domain boundaries with team ownership    |
+| Different deployment requirements       | Consider separate services (beyond this guide) |
+
+#### Migration Path
+
+To migrate from single domain to multiple domains:
+
+1. **Identify boundaries**: Map entities and use cases to potential domains
+2. **Extract domain layer first**: Create subdirectories, move entities
+3. **Extract ports**: Create domain-specific port files
+4. **Extract application services**: One service per domain
+5. **Update adapters**: Organize handlers and DTOs by domain
+6. **Add cross-domain communication**: Introduce orchestration or events as needed
+
+See [ADR-0001](./adr/0001-hexagonal-architecture.md) for the foundational architecture
+decision.
 
 ### Context
 
@@ -806,6 +1101,7 @@ http.SetupRouter(server.Engine(), routerCfg)
 
 - [PATTERNS.md](./PATTERNS.md) - Go patterns for concurrency, services, error handling
 - [SECRET_REDACTION.md](./SECRET_REDACTION.md) - Logging security and secret redaction
+- [Architecture Decision Records](./adr/README.md) - Key architectural decisions with context and rationale
 
 ### External Resources
 
