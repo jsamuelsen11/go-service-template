@@ -806,6 +806,7 @@ http.SetupRouter(server.Engine(), routerCfg)
 
 - [PATTERNS.md](./PATTERNS.md) - Go patterns for concurrency, services, error handling
 - [SECRET_REDACTION.md](./SECRET_REDACTION.md) - Logging security and secret redaction
+- [Architecture Decision Records](./adr/README.md) - Key architectural decisions with context and rationale
 
 ### External Resources
 

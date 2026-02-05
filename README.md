@@ -281,6 +281,7 @@ Generates an HTML coverage report at `coverage.html`.
 | Document                                     | Description                                            |
 | -------------------------------------------- | ------------------------------------------------------ |
 | [Architecture](docs/ARCHITECTURE.md)         | System design, layer descriptions, middleware pipeline |
+| [ADRs](docs/adr/README.md)                   | Architecture Decision Records with context & rationale |
 | [Playbook](docs/playbook/README.md)          | Step-by-step how-to guides for common tasks            |
 | [Troubleshooting](docs/TROUBLESHOOTING.md)   | Diagnosing and resolving common issues                 |
 | [Patterns](docs/PATTERNS.md)                 | Go patterns for concurrency, services, error handling  |
