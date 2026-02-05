@@ -26,7 +26,7 @@ curl https://mise.run | sh
 mise use go@1.25.6
 brew install go-task
 
-# Clone and setup
+# Clone and Set Up
 git clone <repository-url>
 cd go-service-template
 task setup  # Installs dependencies and git hooks
