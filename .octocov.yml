@@ -34,5 +34,6 @@ diff:
 # Push coverage report and badge to central repository branch
 # Badge will be available at: https://raw.githubusercontent.com/{owner}/{repo}/octocov/badge.svg
 push:
+  enable: true
   if: is_default_branch
   branch: octocov
