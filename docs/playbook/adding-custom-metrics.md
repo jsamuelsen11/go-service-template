@@ -262,7 +262,7 @@ Follow OpenTelemetry semantic conventions:
 | ---------------------------------- | ---------------------- | ---------------- |
 | `{namespace}.{entity}.{action}`    | `app.orders.processed` | Business metrics |
 | `{component}.{operation}.duration` | `db.query.duration`    | Latency          |
-| `{component}.{resource}.count`     | `cache.hits.count`     | Counts           |
+| `{component}.{resource}.count`     | `db.connections.count` | Counts           |
 | `{component}.{resource}.size`      | `queue.messages.size`  | Sizes            |
 
 **Rules:**

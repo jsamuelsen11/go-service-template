@@ -281,7 +281,6 @@ APP_PROFILE=local task run
 | -------------- | ----------------------------------------------------- |
 | Database       | Check connection string, credentials, network access  |
 | External API   | Verify URL, check firewall rules, test authentication |
-| Cache (Redis)  | Verify host/port, check memory limits                 |
 
 ```bash
 # Check component-specific logs
@@ -530,7 +529,6 @@ telnet <component-host> <port>
 | Cause                 | Description                   |
 | --------------------- | ----------------------------- |
 | Large response bodies | Not closing response bodies   |
-| Unbounded caches      | In-memory caches growing      |
 | Goroutine leaks       | Goroutines not terminating    |
 | Large request bodies  | Processing oversized requests |
 

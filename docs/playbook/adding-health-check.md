@@ -1,6 +1,6 @@
 # Adding a Health Check
 
-This guide walks through adding a health check for a dependency (database, cache, external service, etc.).
+This guide walks through adding a health check for a dependency (database, external service, etc.).
 
 ## Overview
 
@@ -65,42 +65,6 @@ func (h *DatabaseHealthCheck) Name() string {
 // Check verifies database connectivity.
 func (h *DatabaseHealthCheck) Check(ctx context.Context) error {
     return h.db.PingContext(ctx)
-}
-```
-
----
-
-## Example: Redis Health Check
-
-**File:** `internal/adapters/redis/health.go`
-
-```go
-package redis
-
-import (
-    "context"
-
-    "github.com/redis/go-redis/v9"
-)
-
-// RedisHealthCheck implements ports.HealthChecker for Redis.
-type RedisHealthCheck struct {
-    client *redis.Client
-}
-
-// NewRedisHealthCheck creates a new Redis health checker.
-func NewRedisHealthCheck(client *redis.Client) *RedisHealthCheck {
-    return &RedisHealthCheck{client: client}
-}
-
-// Name returns the health check name.
-func (h *RedisHealthCheck) Name() string {
-    return "redis"
-}
-
-// Check verifies Redis connectivity.
-func (h *RedisHealthCheck) Check(ctx context.Context) error {
-    return h.client.Ping(ctx).Err()
 }
 ```
 
@@ -276,12 +240,12 @@ Each health check must have a unique name:
 ```go
 // Good - descriptive names
 return "postgres-primary"
-return "redis-cache"
 return "payment-service"
+return "inventory-api"
 
 // Bad - generic names
 return "database"
-return "cache"
+return "service"
 return "api"
 ```
 
