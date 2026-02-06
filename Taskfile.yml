@@ -50,6 +50,7 @@ tasks:
         printf "  ${GREEN}task test${RESET}                   Run unit tests with race detection\n"
         printf "  ${GREEN}task test:integration${RESET}       Run BDD integration tests (smoke)\n"
         printf "  ${GREEN}task test:integration:all${RESET}   Run all BDD integration tests\n"
+        printf "  ${GREEN}task test:integration:report${RESET} Generate JSON integration report\n"
         printf "  ${GREEN}task test:benchmark${RESET}         Run Go benchmarks\n"
         printf "  ${GREEN}task test:load${RESET}              Run k6 load tests\n"
         printf "  ${GREEN}task test:e2e${RESET}               Run full E2E suite\n"
@@ -182,6 +183,34 @@ tasks:
     desc: Run all GoDog integration tests
     cmds:
       - go test -tags integration -v ./test/integration/...
+
+  test:integration:report:
+    desc: Run GoDog integration tests with JSON report
+    env:
+      GODOG_FORMAT: cucumber
+      GODOG_OUTPUT_FILE: test/reports/integration.json
+      GODOG_TAGS: "@smoke && ~@requires-network"
+    cmds:
+      - mkdir -p test/reports
+      - go test -tags integration -v ./test/integration/...
+      - echo "Report generated at test/reports/integration.json"
+
+  test:integration:html:
+    desc: Run GoDog integration tests with HTML report
+    env:
+      GODOG_FORMAT: cucumber
+      GODOG_OUTPUT_FILE: test/reports/integration.json
+      GODOG_TAGS: "@smoke && ~@requires-network"
+    cmds:
+      - mkdir -p test/reports
+      - go test -tags integration -v ./test/integration/...
+      - cmd: |
+          if command -v npx &> /dev/null; then
+            npx cucumber-html-reporter --input test/reports/integration.json --output test/reports/integration.html 2>/dev/null || echo "Install cucumber-html-reporter: npm install -g cucumber-html-reporter"
+          else
+            echo "JSON report at test/reports/integration.json (install npx for HTML)"
+          fi
+        silent: true
 
   test:e2e:
     desc: Run full E2E test suite
