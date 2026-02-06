@@ -5,7 +5,7 @@
 with-expecter: true
 mockname: "Mock{{.InterfaceName}}"
 outpkg: mocks
-dir: "{{.InterfaceDir}}/mocks"
+dir: "internal/mocks"
 
 packages:
   github.com/jsamuelsen/go-service-template/internal/ports:
@@ -17,6 +17,8 @@ packages:
       # Service port interfaces
       QuoteClient:
       EventPublisher:
+      ExampleRepository:
+      ExampleClient:
 
       # Feature flags
       FeatureFlags:
