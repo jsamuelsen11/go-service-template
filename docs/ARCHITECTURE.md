@@ -668,6 +668,38 @@ default:
 3. **Respect cancellation**: Check `ctx.Done()` in long-running operations
 4. **Use context-aware logger**: `logging.FromContext(ctx)` includes request metadata
 
+### Request Context Pattern
+
+For orchestration services that coordinate multiple downstream calls, the Two-Phase Request
+Context Pattern provides request-scoped in-memory caching and staged writes.
+
+**Location:** `/internal/app/context/`
+
+See [ADR-0001](./adr/0001-hexagonal-architecture.md#request-context-pattern-for-orchestration) for the architectural decision.
+
+| Component        | Purpose                                                |
+| ---------------- | ------------------------------------------------------ |
+| `RequestContext` | Main struct with in-memory cache and action collection |
+| `GetOrFetch()`   | Phase 1: Lazy memoization for expensive fetches        |
+| `AddAction()`    | Phase 2: Stage write operations                        |
+| `Commit()`       | Execute all actions with automatic rollback on failure |
+| `DataProvider`   | Interface for type-safe data fetching                  |
+| `Action`         | Interface for staged write operations                  |
+
+**When to use:**
+
+- Orchestrating multiple downstream service calls where data is reused
+- Coordinating writes that should succeed or fail together
+- Complex use cases requiring rollback on failure
+
+**When NOT to use:**
+
+- Simple CRUD operations
+- Single-service calls
+- Operations where database transactions suffice
+
+See [Using Request Context](./playbook/using-request-context.md) for step-by-step guide.
+
 ---
 
 ## Middleware Pipeline

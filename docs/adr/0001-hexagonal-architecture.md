@@ -513,6 +513,79 @@ internal/
     └── telemetry/   #   Tracing and metrics
 ```
 
+### Request Context Pattern for Orchestration
+
+Orchestration services often need to:
+
+1. **Fetch data from multiple downstream services** - same data may be needed multiple times
+2. **Coordinate multiple write operations** - all should succeed or fail together
+
+The **Two-Phase Request Context Pattern** (`/internal/app/context/`) addresses this:
+
+#### Phase 1: Lazy Memoization
+
+Uses an **in-memory cache** that lives only for the duration of the request. This avoids
+duplicate API calls within a single request without the complexity of external caching.
+
+```mermaid
+sequenceDiagram
+    participant S as Service
+    participant RC as RequestContext
+    participant C as Client
+
+    S->>RC: GetOrFetch("user:123", fetchFn)
+    RC->>RC: Check in-memory cache
+    alt Cache miss
+        RC->>C: fetchFn(ctx)
+        C-->>RC: user data
+        RC->>RC: Store in cache
+    end
+    RC-->>S: user data
+
+    Note over S,RC: Second call uses cache
+    S->>RC: GetOrFetch("user:123", fetchFn)
+    RC->>RC: Cache hit
+    RC-->>S: cached data
+```
+
+#### Phase 2: Staged Writes with Rollback
+
+```mermaid
+sequenceDiagram
+    participant S as Service
+    participant RC as RequestContext
+    participant A1 as Action 1
+    participant A2 as Action 2
+    participant A3 as Action 3
+
+    S->>RC: AddAction(action1)
+    S->>RC: AddAction(action2)
+    S->>RC: AddAction(action3)
+    S->>RC: Commit(ctx)
+
+    RC->>A1: Execute(ctx)
+    A1-->>RC: success
+    RC->>A2: Execute(ctx)
+    A2-->>RC: success
+    RC->>A3: Execute(ctx)
+    A3-->>RC: error!
+
+    Note over RC,A3: Rollback in reverse order
+    RC->>A2: Rollback(ctx)
+    RC->>A1: Rollback(ctx)
+    RC-->>S: error
+```
+
+| Component        | Purpose                                            |
+| ---------------- | -------------------------------------------------- |
+| `RequestContext` | Request-scoped in-memory cache + action collection |
+| `GetOrFetch()`   | Phase 1: Lazy memoization (in-memory, per-request) |
+| `AddAction()`    | Phase 2: Stage write operations                    |
+| `Commit()`       | Execute all actions with rollback on failure       |
+| `Action`         | Interface: Execute, Rollback, Description          |
+
+See [Using Request Context](../playbook/using-request-context.md) for implementation guide.
+
 ## Consequences
 
 ### Positive
