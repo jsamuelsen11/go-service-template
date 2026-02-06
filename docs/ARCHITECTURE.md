@@ -18,6 +18,16 @@ This document describes the architecture of the Go Service Template, which imple
       - [Adapters Layer (`/internal/adapters/`)](#adapters-layer-internaladapters)
       - [Platform Layer (`/internal/platform/`)](#platform-layer-internalplatform)
     - [Scaling to Multiple Domains](#scaling-to-multiple-domains)
+    - [Domain-Driven Design Concepts](#domain-driven-design-concepts)
+      - [Use Cases vs Domain Services](#use-cases-vs-domain-services)
+      - [Orchestration Patterns](#orchestration-patterns)
+      - [Transaction Management with Saga Pattern](#transaction-management-with-saga-pattern)
+      - [Aggregate Boundaries for API Call Grouping](#aggregate-boundaries-for-api-call-grouping)
+    - [Domain Extensibility Patterns](#domain-extensibility-patterns)
+      - [Multiple Bounded Contexts](#multiple-bounded-contexts)
+      - [Entity Type Hierarchies (Composition-Based)](#entity-type-hierarchies-composition-based)
+      - [Plugin/Strategy Patterns with Interfaces](#pluginstrategy-patterns-with-interfaces)
+      - [Extensibility Decision Guide](#extensibility-decision-guide)
     - [Context](#context)
   - [Middleware Pipeline](#middleware-pipeline)
     - [Inbound Middleware (HTTP Server)](#inbound-middleware-http-server)
@@ -623,6 +633,386 @@ To migrate from single domain to multiple domains:
 See [ADR-0001](./adr/0001-hexagonal-architecture.md) for the foundational architecture
 decision.
 
+### Domain-Driven Design Concepts
+
+This section describes how DDD tactical patterns are applied in this service template.
+
+#### Use Cases vs Domain Services
+
+The template distinguishes between two types of services:
+
+| Aspect           | Application Service (Use Case)  | Domain Service                   |
+| ---------------- | ------------------------------- | -------------------------------- |
+| **Location**     | `/internal/app/`                | `/internal/domain/`              |
+| **Purpose**      | Orchestrates workflows          | Encapsulates pure business logic |
+| **Dependencies** | Ports, domain services, logging | None (pure functions)            |
+| **I/O**          | Yes (via ports)                 | Never                            |
+| **Example**      | `QuoteService.GetRandomQuote()` | `Quote.Validate()`               |
+
+**Application Services (Use Cases):**
+
+Application services coordinate multiple domain operations, call external services through ports,
+handle logging/tracing, and manage transactions.
+
+```go
+// internal/app/quote_service.go - Application Service
+func (s *QuoteService) GetRandomQuote(ctx context.Context) (*domain.Quote, error) {
+    s.logger.InfoContext(ctx, "fetching random quote")
+
+    // Orchestrates: calls port, handles errors, logs
+    quote, err := s.quoteClient.GetRandomQuote(ctx)
+    if err != nil {
+        s.logger.ErrorContext(ctx, "failed to fetch random quote",
+            slog.Any("error", err))
+        return nil, err
+    }
+
+    return quote, nil
+}
+```
+
+**Domain Services:**
+
+Domain services contain pure business logic with no infrastructure dependencies.
+They can be tested without mocks and belong in `/internal/domain/` alongside entities.
+
+```go
+// internal/domain/pricing.go - Domain Service (Pure Logic)
+func CalculateDiscount(order *Order, user *User) Money {
+    // Pure business rule - no I/O, no logging
+    if user.IsPremium && order.Total.Amount > 10000 {
+        return Money{Amount: order.Total.Amount / 10, Currency: order.Total.Currency}
+    }
+    return Money{Amount: 0, Currency: order.Total.Currency}
+}
+```
+
+#### Orchestration Patterns
+
+Application services coordinate multiple operations using two patterns:
+
+**Sequential Orchestration:**
+
+Simple, synchronous execution where each step must complete before the next:
+
+```go
+func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*Order, error) {
+    // Step 1: Validate
+    if err := req.Validate(); err != nil {
+        return nil, err
+    }
+
+    // Step 2: Check inventory
+    available, err := s.inventoryClient.Check(ctx, req.Items)
+    if err != nil {
+        return nil, fmt.Errorf("checking inventory: %w", err)
+    }
+
+    // Step 3: Create order
+    order, err := s.orderRepo.Create(ctx, req.ToOrder())
+    if err != nil {
+        return nil, fmt.Errorf("creating order: %w", err)
+    }
+
+    return order, nil
+}
+```
+
+**Parallel Orchestration:**
+
+For independent operations that can run concurrently:
+
+```go
+func (s *DashboardService) GetDashboard(ctx context.Context, userID string) (*Dashboard, error) {
+    var (
+        wg       sync.WaitGroup
+        userErr  error
+        orderErr error
+        user     *User
+        orders   []*Order
+    )
+
+    wg.Add(2)
+
+    go func() {
+        defer wg.Done()
+        user, userErr = s.userClient.GetByID(ctx, userID)
+    }()
+
+    go func() {
+        defer wg.Done()
+        orders, orderErr = s.orderClient.ListByUser(ctx, userID)
+    }()
+
+    wg.Wait()
+
+    if userErr != nil {
+        return nil, fmt.Errorf("fetching user: %w", userErr)
+    }
+    if orderErr != nil {
+        return nil, fmt.Errorf("fetching orders: %w", orderErr)
+    }
+
+    return &Dashboard{User: user, Orders: orders}, nil
+}
+```
+
+#### Transaction Management with Saga Pattern
+
+For operations that must succeed or fail together across multiple services,
+use the Saga pattern with compensating actions.
+
+**Location:** `/internal/app/context/`
+
+```go
+// Action interface from internal/app/context/actions.go
+type Action interface {
+    Execute(ctx context.Context) error
+    Rollback(ctx context.Context) error
+    Description() string
+}
+```
+
+##### Example: Order Fulfillment Saga
+
+```go
+func (s *FulfillmentService) FulfillOrder(ctx context.Context, orderID string) error {
+    rc := appctx.New(ctx)
+
+    // Phase 1: Fetch data with memoization
+    order, err := rc.GetOrFetch("order:"+orderID, func(ctx context.Context) (any, error) {
+        return s.orderClient.GetByID(ctx, orderID)
+    })
+    if err != nil {
+        return err
+    }
+
+    // Phase 2: Stage compensating actions
+    _ = rc.AddAction(&ReserveInventoryAction{Items: order.(*Order).Items})
+    _ = rc.AddAction(&ChargePaymentAction{Amount: order.(*Order).Total})
+    _ = rc.AddAction(&CreateShipmentAction{OrderID: orderID})
+
+    // Execute all or rollback on failure
+    return rc.Commit(ctx)
+}
+```
+
+**Saga Rollback Flow:**
+
+```text
+Execute: ReserveInventory → ChargePayment → CreateShipment (FAILS)
+Rollback: ← ChargePayment ← ReserveInventory
+```
+
+On failure, `Commit()` automatically rolls back executed actions in reverse order.
+See [Using Request Context](./playbook/using-request-context.md) for implementation details.
+
+#### Aggregate Boundaries for API Call Grouping
+
+When orchestrating multiple API calls, group related data fetches considering:
+
+1. **Consistency Requirements**: Data that must be consistent should be fetched together
+2. **Failure Isolation**: Independent data can fail independently
+3. **Caching Strategy**: Use Request Context memoization for reused data
+
+##### Example: Order Processing Aggregate
+
+```go
+// Order aggregate: order + line items + shipping address
+// These are always needed together and must be consistent
+func (s *OrderService) GetOrderAggregate(ctx context.Context, orderID string) (*OrderAggregate, error) {
+    rc := appctx.New(ctx)
+
+    // Fetch order (cached for subsequent use)
+    order, err := rc.GetOrFetch("order:"+orderID, s.fetchOrder(orderID))
+    if err != nil {
+        return nil, err
+    }
+
+    // Fetch related data
+    items, _ := rc.GetOrFetch("items:"+orderID, s.fetchItems(orderID))
+    address, _ := rc.GetOrFetch("address:"+order.(*Order).AddressID, s.fetchAddress)
+
+    return &OrderAggregate{
+        Order:   order.(*Order),
+        Items:   items.([]*LineItem),
+        Address: address.(*Address),
+    }, nil
+}
+```
+
+### Domain Extensibility Patterns
+
+This section describes patterns for extending the domain as the service grows.
+
+#### Multiple Bounded Contexts
+
+When a service evolves to handle multiple related domains, organize code by bounded context:
+
+```text
+internal/
+├── domain/
+│   ├── quotes/           # Quotes bounded context
+│   │   ├── quote.go
+│   │   ├── author.go
+│   │   └── errors.go
+│   ├── orders/           # Orders bounded context
+│   │   ├── order.go
+│   │   ├── line_item.go
+│   │   └── errors.go
+│   └── shared/           # Shared kernel
+│       └── money.go
+├── ports/
+│   ├── quotes/
+│   │   └── services.go
+│   └── orders/
+│       └── services.go
+└── app/
+    ├── quotes/
+    │   └── quote_service.go
+    └── orders/
+        └── order_service.go
+```
+
+**Guidelines:**
+
+- Each bounded context has its own package
+- Shared kernel contains only value objects used across contexts
+- Contexts communicate through application layer, not directly
+
+#### Entity Type Hierarchies (Composition-Based)
+
+Go favors composition over inheritance. For entity type variations:
+
+##### Embedded Common Fields
+
+```go
+// Base fields embedded in specific types
+type BaseEntity struct {
+    ID        string
+    CreatedAt time.Time
+    UpdatedAt time.Time
+    Version   int
+}
+
+type Quote struct {
+    BaseEntity        // Embedded
+    Content   string
+    Author    string
+    Tags      []string
+}
+
+type Order struct {
+    BaseEntity        // Embedded
+    UserID    string
+    Status    OrderStatus
+    Items     []LineItem
+    Total     Money
+}
+```
+
+##### Type Field with Behavior Switch
+
+```go
+type Notification struct {
+    ID      string
+    Type    NotificationType
+    Payload any
+}
+
+type NotificationType string
+
+const (
+    NotificationEmail NotificationType = "email"
+    NotificationSMS   NotificationType = "sms"
+    NotificationPush  NotificationType = "push"
+)
+
+// Behavior varies by type
+func (n *Notification) Send(ctx context.Context, sender NotificationSender) error {
+    switch n.Type {
+    case NotificationEmail:
+        return sender.SendEmail(ctx, n.Payload.(*EmailPayload))
+    case NotificationSMS:
+        return sender.SendSMS(ctx, n.Payload.(*SMSPayload))
+    case NotificationPush:
+        return sender.SendPush(ctx, n.Payload.(*PushPayload))
+    default:
+        return fmt.Errorf("unknown notification type: %s", n.Type)
+    }
+}
+```
+
+#### Plugin/Strategy Patterns with Interfaces
+
+For behavior that varies at runtime, use interfaces:
+
+##### Strategy Pattern Example: Payment Processing
+
+```go
+// ports/payment.go
+type PaymentProcessor interface {
+    Charge(ctx context.Context, amount Money, source PaymentSource) (*Charge, error)
+    Refund(ctx context.Context, chargeID string) error
+}
+
+// Multiple implementations can exist:
+// - adapters/payments/stripe.go
+// - adapters/payments/paypal.go
+```
+
+##### Plugin Pattern Example: Feature Flags
+
+```go
+// ports/featureflags.go - Already exists in this template
+type FeatureFlags interface {
+    IsEnabled(ctx context.Context, flag string, defaultValue bool) bool
+    GetString(ctx context.Context, flag string, defaultValue string) string
+    GetInt(ctx context.Context, flag string, defaultValue int) int
+    GetFloat(ctx context.Context, flag string, defaultValue float64) float64
+    GetJSON(ctx context.Context, flag string, target any) error
+}
+```
+
+Implementations can be swapped at runtime:
+
+- `launchdarkly.Client` - LaunchDarkly SDK
+- `unleash.Client` - Unleash SDK
+- `config.StaticFlags` - Config-file based (for testing)
+- `memory.MockFlags` - In-memory (for unit tests)
+
+##### Registering Implementations
+
+```go
+// main.go - Select implementation at runtime
+var flags ports.FeatureFlags
+
+switch cfg.FeatureFlags.Provider {
+case "launchdarkly":
+    flags = launchdarkly.New(cfg.FeatureFlags.SDKKey)
+case "unleash":
+    flags = unleash.New(cfg.FeatureFlags.URL)
+default:
+    flags = config.NewStaticFlags(cfg.FeatureFlags.Static)
+}
+
+svc := app.NewService(app.ServiceConfig{
+    Client: serviceClient,
+    Flags:  flags,
+    Logger: logger,
+})
+```
+
+#### Extensibility Decision Guide
+
+| Need                          | Pattern             | Example          |
+| ----------------------------- | ------------------- | ---------------- |
+| Different behavior per type   | Type field + switch | NotificationType |
+| Shared fields across entities | Embedded struct     | BaseEntity       |
+| Swappable implementations     | Interface + DI      | PaymentProcessor |
+| Runtime behavior selection    | Strategy pattern    | FeatureFlags     |
+| Growing domain complexity     | Bounded contexts    | quotes/, orders/ |
+
 ### Context
 
 Go's `context.Context` is a fundamental pattern used throughout this codebase. It carries request-scoped data,
@@ -667,6 +1057,38 @@ default:
 2. **Don't store context in structs**: Pass it through function calls
 3. **Respect cancellation**: Check `ctx.Done()` in long-running operations
 4. **Use context-aware logger**: `logging.FromContext(ctx)` includes request metadata
+
+### Request Context Pattern
+
+For orchestration services that coordinate multiple downstream calls, the Two-Phase Request
+Context Pattern provides request-scoped in-memory caching and staged writes.
+
+**Location:** `/internal/app/context/`
+
+See [ADR-0001](./adr/0001-hexagonal-architecture.md#request-context-pattern-for-orchestration) for the architectural decision.
+
+| Component        | Purpose                                                |
+| ---------------- | ------------------------------------------------------ |
+| `RequestContext` | Main struct with in-memory cache and action collection |
+| `GetOrFetch()`   | Phase 1: Lazy memoization for expensive fetches        |
+| `AddAction()`    | Phase 2: Stage write operations                        |
+| `Commit()`       | Execute all actions with automatic rollback on failure |
+| `DataProvider`   | Interface for type-safe data fetching                  |
+| `Action`         | Interface for staged write operations                  |
+
+**When to use:**
+
+- Orchestrating multiple downstream service calls where data is reused
+- Coordinating writes that should succeed or fail together
+- Complex use cases requiring rollback on failure
+
+**When NOT to use:**
+
+- Simple CRUD operations
+- Single-service calls
+- Operations where database transactions suffice
+
+See [Using Request Context](./playbook/using-request-context.md) for step-by-step guide.
 
 ---
 
@@ -1007,10 +1429,14 @@ All logs use structured JSON format with consistent fields:
 
 | Level   | Usage                                              |
 | ------- | -------------------------------------------------- |
+| `TRACE` | Verbose external call debugging (custom level)     |
 | `DEBUG` | Detailed debugging information                     |
 | `INFO`  | Normal operational messages                        |
 | `WARN`  | Warning conditions (circuit breaker state changes) |
 | `ERROR` | Error conditions requiring attention               |
+
+For comprehensive logging guidelines including level selection, layer-specific patterns,
+file rotation, and ACL trace logging, see [LOGGING.md](./LOGGING.md).
 
 ---
 

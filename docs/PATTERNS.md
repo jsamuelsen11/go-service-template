@@ -138,6 +138,58 @@ case <-time.After(backoff):
 }
 ```
 
+### Two-Phase Request Context Pattern
+
+For orchestration services that need to:
+
+1. Fetch data lazily with request-scoped in-memory memoization
+2. Stage multiple write operations for atomic execution
+
+See `/internal/app/context/` for the implementation.
+
+#### Phase 1: Lazy Memoization with GetOrFetch
+
+Uses an in-memory cache that lives only for the duration of the request:
+
+```go
+import appctx "github.com/jsamuelsen/go-service-template/internal/app/context"
+
+func (s *Service) ProcessOrder(ctx context.Context, orderID string) error {
+    rc := appctx.New(ctx)
+
+    // First call fetches from service
+    order, err := rc.GetOrFetch("order:"+orderID, func(ctx context.Context) (any, error) {
+        return s.orderClient.GetByID(ctx, orderID)
+    })
+
+    // Subsequent calls return cached value - no duplicate API calls
+    order, _ = rc.GetOrFetch("order:"+orderID, fetchFn)
+}
+```
+
+#### Phase 2: Staged Writes with Rollback
+
+```go
+// Stage actions
+_ = rc.AddAction(&UpdateInventoryAction{OrderID: orderID, Items: items})
+_ = rc.AddAction(&ChargePaymentAction{Amount: total})
+_ = rc.AddAction(&SendConfirmationAction{Email: user.Email})
+
+// Execute all or rollback on failure
+if err := rc.Commit(ctx); err != nil {
+    // Failed action and all preceding actions are rolled back
+    return err
+}
+```
+
+#### When to Use
+
+| Use Case                                | Pattern                              |
+| --------------------------------------- | ------------------------------------ |
+| Multiple API calls with shared data     | Phase 1 (GetOrFetch)                 |
+| Coordinated writes to multiple services | Phase 2 (AddAction/Commit)           |
+| Simple CRUD operations                  | Standard context (skip this pattern) |
+
 ---
 
 ## Circuit Breaker

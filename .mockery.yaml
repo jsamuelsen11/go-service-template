@@ -16,7 +16,6 @@ packages:
 
       # Service port interfaces
       QuoteClient:
-      Cache:
       EventPublisher:
 
       # Feature flags

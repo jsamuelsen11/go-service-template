@@ -141,7 +141,7 @@ func BenchmarkReadinessHandler_WithChecks(b *testing.B) {
 
     // Add mock health checkers
     _ = registry.Register(&mockHealthChecker{name: "database"})
-    _ = registry.Register(&mockHealthChecker{name: "cache"})
+    _ = registry.Register(&mockHealthChecker{name: "external-api"})
 
     buildInfo := handlers.NewBuildInfo("1.0.0", "abc123", "2024-01-01T00:00:00Z")
     handler := handlers.NewHealthHandler(registry, buildInfo)

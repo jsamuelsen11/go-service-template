@@ -13,6 +13,7 @@ Step-by-step how-to guides for common development tasks in this service template
 | [Adding a Health Check](./adding-health-check.md)             | Implement health checks for dependencies                   |
 | [Implementing a Feature Flag](./implementing-feature-flag.md) | Use feature flags for gradual rollouts                     |
 | [Adding Custom Metrics](./adding-custom-metrics.md)           | Add OpenTelemetry metrics and Prometheus scraping          |
+| [Using Request Context](./using-request-context.md)           | Lazy loading and staged writes for orchestration           |
 
 ### Testing
 

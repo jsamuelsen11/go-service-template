@@ -12,7 +12,6 @@ package ports
 
 import (
 	"context"
-	"time"
 
 	"github.com/jsamuelsen/go-service-template/internal/domain"
 )
@@ -86,22 +85,6 @@ type Event interface {
 
 	// Payload returns the event data for serialization.
 	Payload() any
-}
-
-// Cache defines the contract for caching operations.
-// Implementations may use Redis, Memcached, or in-memory caches.
-type Cache interface {
-	// Get retrieves a value from the cache.
-	// Returns domain.ErrNotFound if the key does not exist.
-	Get(ctx context.Context, key string) ([]byte, error)
-
-	// Set stores a value in the cache with optional TTL.
-	// A TTL of 0 means no expiration.
-	Set(ctx context.Context, key string, value []byte, ttl time.Duration) error
-
-	// Delete removes a value from the cache.
-	// Does not return an error if the key does not exist.
-	Delete(ctx context.Context, key string) error
 }
 
 // QuoteClient defines the contract for fetching quotes from an external service.
