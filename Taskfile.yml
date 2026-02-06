@@ -12,6 +12,8 @@ vars:
   BUILD_TIME:
     sh: date -u '+%Y-%m-%dT%H:%M:%SZ'
   LDFLAGS: -s -w -X main.Version={{.VERSION}} -X main.Commit={{.GIT_COMMIT}} -X main.BuildTime={{.BUILD_TIME}}
+  IMAGE_NAME:
+    sh: basename $(pwd)
 
 tasks:
   default:
@@ -30,55 +32,56 @@ tasks:
         printf "${BOLD}Go Service Template Commands${RESET}\n"
         printf "\n"
         printf "${YELLOW}Setup:${RESET}\n"
-        printf "  ${GREEN}task setup${RESET}              Install all dev dependencies and git hooks\n"
-        printf "  ${GREEN}task setup:k6${RESET}           Install k6 load testing tool\n"
+        printf "  ${GREEN}task setup${RESET}                  Install all dev dependencies and git hooks\n"
+        printf "  ${GREEN}task setup:k6${RESET}               Install k6 load testing tool\n"
         printf "\n"
         printf "${YELLOW}Development:${RESET}\n"
-        printf "  ${GREEN}task run${RESET}                Run service with hot reload (air)\n"
-        printf "  ${GREEN}task generate${RESET}           Run go generate (mocks, etc.)\n"
-        printf "  ${GREEN}task build${RESET}              Build production binary\n"
-        printf "  ${GREEN}task clean${RESET}              Remove build artifacts\n"
+        printf "  ${GREEN}task run${RESET}                    Run service with hot reload (air)\n"
+        printf "  ${GREEN}task generate${RESET}               Run go generate (mocks, etc.)\n"
+        printf "  ${GREEN}task build${RESET}                  Build production binary\n"
+        printf "  ${GREEN}task clean${RESET}                  Remove build artifacts\n"
         printf "\n"
         printf "${YELLOW}Code Quality:${RESET}\n"
-        printf "  ${GREEN}task fmt${RESET}                Format all Go code (gofumpt)\n"
-        printf "  ${GREEN}task lint${RESET}               Run golangci-lint\n"
-        printf "  ${GREEN}task vuln${RESET}               Run govulncheck for vulnerabilities\n"
+        printf "  ${GREEN}task fmt${RESET}                    Format all Go code (gofumpt)\n"
+        printf "  ${GREEN}task lint${RESET}                   Run golangci-lint\n"
+        printf "  ${GREEN}task vuln${RESET}                   Run govulncheck for vulnerabilities\n"
         printf "\n"
         printf "${YELLOW}Testing:${RESET}\n"
-        printf "  ${GREEN}task test${RESET}               Run unit tests with race detection\n"
-        printf "  ${GREEN}task test:integration${RESET}   Run BDD integration tests (smoke)\n"
-        printf "  ${GREEN}task test:integration:all${RESET}  Run all BDD integration tests\n"
-        printf "  ${GREEN}task test:benchmark${RESET}     Run Go benchmarks\n"
-        printf "  ${GREEN}task test:load${RESET}          Run k6 load tests\n"
-        printf "  ${GREEN}task test:e2e${RESET}           Run full E2E suite\n"
-        printf "  ${GREEN}task coverage${RESET}           Generate test coverage report\n"
-        printf "  ${GREEN}task coverage:report${RESET}    Generate rich coverage report (octocov)\n"
-        printf "  ${GREEN}task coverage:view${RESET}      Generate coverage HTML and open in browser\n"
+        printf "  ${GREEN}task test${RESET}                   Run unit tests with race detection\n"
+        printf "  ${GREEN}task test:integration${RESET}       Run BDD integration tests (smoke)\n"
+        printf "  ${GREEN}task test:integration:all${RESET}   Run all BDD integration tests\n"
+        printf "  ${GREEN}task test:benchmark${RESET}         Run Go benchmarks\n"
+        printf "  ${GREEN}task test:load${RESET}              Run k6 load tests\n"
+        printf "  ${GREEN}task test:e2e${RESET}               Run full E2E suite\n"
+        printf "  ${GREEN}task coverage${RESET}               Generate test coverage report\n"
+        printf "  ${GREEN}task coverage:report${RESET}        Generate rich coverage report (octocov)\n"
+        printf "  ${GREEN}task coverage:view${RESET}          Generate coverage HTML and open in browser\n"
         printf "\n"
         printf "${YELLOW}Docker:${RESET}\n"
-        printf "  ${GREEN}task docker:build${RESET}       Build Docker image\n"
-        printf "  ${GREEN}task docker:run${RESET}         Run container locally\n"
+        printf "  ${GREEN}task docker:build${RESET}           Build Docker image\n"
+        printf "  ${GREEN}task docker:run${RESET}             Run container locally\n"
+        printf "  ${GREEN}task docker:clean${RESET}           Remove local Docker images\n"
         printf "\n"
         printf "${YELLOW}OpenAPI:${RESET}\n"
-        printf "  ${GREEN}task openapi:validate${RESET}   Validate OpenAPI spec (Spectral)\n"
-        printf "  ${GREEN}task openapi:diff${RESET}       Check for breaking changes vs main\n"
-        printf "  ${GREEN}task openapi:changelog${RESET}  Generate changelog vs main\n"
+        printf "  ${GREEN}task openapi:validate${RESET}       Validate OpenAPI spec (Spectral)\n"
+        printf "  ${GREEN}task openapi:diff${RESET}           Check for breaking changes vs main\n"
+        printf "  ${GREEN}task openapi:changelog${RESET}      Generate changelog vs main\n"
         printf "\n"
         printf "${YELLOW}CI/CD:${RESET}\n"
-        printf "  ${GREEN}task ci${RESET}                 Run full CI pipeline locally\n"
+        printf "  ${GREEN}task ci${RESET}                     Run full CI pipeline locally\n"
         printf "\n"
         printf "${YELLOW}Workflow Shortcuts:${RESET}\n"
-        printf "  ${GREEN}task deps${RESET}               Tidy, download, and verify dependencies\n"
-        printf "  ${GREEN}task deps:update${RESET}        Update all dependencies to latest\n"
-        printf "  ${GREEN}task check${RESET}              Run all quality checks (fmt+lint+vuln)\n"
-        printf "  ${GREEN}task verify${RESET}             Full verification (deps+check+test)\n"
-        printf "  ${GREEN}task dev:setup${RESET}          Set up development environment\n"
-        printf "  ${GREEN}task quick${RESET}              Quick check (format and test)\n"
+        printf "  ${GREEN}task deps${RESET}                   Tidy, download, and verify dependencies\n"
+        printf "  ${GREEN}task deps:update${RESET}            Update all dependencies to latest\n"
+        printf "  ${GREEN}task check${RESET}                  Run all quality checks (fmt+lint+vuln)\n"
+        printf "  ${GREEN}task verify${RESET}                 Full verification (deps+check+test)\n"
+        printf "  ${GREEN}task dev:setup${RESET}              Set up development environment\n"
+        printf "  ${GREEN}task quick${RESET}                  Quick check (format and test)\n"
         printf "\n"
         printf "${CYAN}Options:${RESET}\n"
-        printf "  ${DIM}TEST_FORMAT=dots${RESET}        Change test output (dots|pkgname|standard-verbose)\n"
-        printf "  ${DIM}BASE_REF=origin/develop${RESET} Override OpenAPI diff base branch\n"
-        printf "  ${DIM}HOST_PORT=9090${RESET}          Override docker:run host port (default: 8080)\n"
+        printf "  ${DIM}TEST_FORMAT=dots${RESET}              Change test output (dots|pkgname|standard-verbose)\n"
+        printf "  ${DIM}BASE_REF=origin/develop${RESET}       Override OpenAPI diff base branch\n"
+        printf "  ${DIM}HOST_PORT=9090${RESET}                Override docker:run host port (default: 8080)\n"
         printf "\n"
         printf "${CYAN}Examples:${RESET}\n"
         printf "  ${DIM}task run${RESET}                      Start dev server with hot reload\n"
@@ -286,14 +289,19 @@ tasks:
   docker:build:
     desc: Build Docker image
     cmds:
-      - docker build -t {{.BINARY_NAME}}:{{.VERSION}} --build-arg VERSION={{.VERSION}} --build-arg GIT_COMMIT={{.GIT_COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} .
+      - docker build -t {{.IMAGE_NAME}}:{{.GIT_COMMIT}} --build-arg VERSION={{.VERSION}} --build-arg GIT_COMMIT={{.GIT_COMMIT}} --build-arg BUILD_TIME={{.BUILD_TIME}} .
 
   docker:run:
     desc: Run Docker container locally
     vars:
       HOST_PORT: '{{.HOST_PORT | default "8080"}}'
     cmds:
-      - docker run --rm -p {{.HOST_PORT}}:8080 {{.BINARY_NAME}}:{{.VERSION}}
+      - docker run --rm -p {{.HOST_PORT}}:8080 {{.IMAGE_NAME}}:{{.GIT_COMMIT}}
+
+  docker:clean:
+    desc: Remove local Docker images for this project
+    cmds:
+      - docker images {{.IMAGE_NAME}} -q | xargs -r docker rmi -f
 
   # ─────────────────────────────────────────────────────────────
   # OpenAPI
