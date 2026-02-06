@@ -67,6 +67,14 @@ tasks:
         printf "${YELLOW}CI/CD:${RESET}\n"
         printf "  ${GREEN}task ci${RESET}                 Run full CI pipeline locally\n"
         printf "\n"
+        printf "${YELLOW}Workflow Shortcuts:${RESET}\n"
+        printf "  ${GREEN}task deps${RESET}               Tidy, download, and verify dependencies\n"
+        printf "  ${GREEN}task deps:update${RESET}        Update all dependencies to latest\n"
+        printf "  ${GREEN}task check${RESET}              Run all quality checks (fmt+lint+vuln)\n"
+        printf "  ${GREEN}task verify${RESET}             Full verification (deps+check+test)\n"
+        printf "  ${GREEN}task dev:setup${RESET}          Set up development environment\n"
+        printf "  ${GREEN}task quick${RESET}              Quick check (format and test)\n"
+        printf "\n"
         printf "${CYAN}Options:${RESET}\n"
         printf "  ${DIM}TEST_FORMAT=dots${RESET}        Change test output (dots|pkgname|standard-verbose)\n"
         printf "  ${DIM}BASE_REF=origin/develop${RESET} Override OpenAPI diff base branch\n"
@@ -226,6 +234,50 @@ tasks:
       - task: test
       - task: coverage
       - task: vuln
+
+  # ─────────────────────────────────────────────────────────────
+  # Workflow Shortcuts
+  # ─────────────────────────────────────────────────────────────
+
+  deps:
+    desc: Tidy, download, and verify dependencies
+    cmds:
+      - go mod tidy
+      - go mod download
+      - go mod verify
+
+  deps:update:
+    desc: Update all dependencies to latest versions
+    cmds:
+      - go get -u ./...
+      - task: deps
+
+  check:
+    desc: Run all code quality checks (fmt, lint, vuln)
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: vuln
+
+  verify:
+    desc: Full verification (deps, quality checks, tests)
+    cmds:
+      - task: deps
+      - task: check
+      - task: test
+
+  dev:setup:
+    desc: Set up development environment
+    cmds:
+      - task: deps
+      - task: setup
+      - task: generate
+
+  quick:
+    desc: Quick check (format and test)
+    cmds:
+      - task: fmt
+      - task: test
 
   # ─────────────────────────────────────────────────────────────
   # Docker
