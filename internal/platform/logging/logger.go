@@ -16,6 +16,10 @@ import (
 // logDirPerms is the permission mode for log directories.
 const logDirPerms = 0o750
 
+// LevelTrace is a custom log level below Debug for verbose tracing.
+// slog.LevelDebug is -4, so Trace at -8 is more verbose.
+const LevelTrace = slog.Level(-8)
+
 // Config holds logging configuration.
 type Config struct {
 	Level   string     // debug, info, warn, error
@@ -101,8 +105,10 @@ func newTextHandler(w io.Writer, level slog.Level) slog.Handler {
 }
 
 // newJSONHandler creates a standard slog JSON handler with redaction.
+// AddSource enables source file and line info for debugging.
 func newJSONHandler(w io.Writer, level slog.Level) slog.Handler {
 	opts := &slog.HandlerOptions{
+		AddSource:   true,
 		Level:       level,
 		ReplaceAttr: NewReplaceAttr(),
 	}
@@ -137,8 +143,11 @@ func newFileHandler(cfg FileConfig, level slog.Level) slog.Handler {
 }
 
 // slogToCharmLevel converts slog.Level to charmbracelet/log level.
+// Note: charm/log doesn't have a trace level, so trace maps to debug.
 func slogToCharmLevel(level slog.Level) log.Level {
 	switch {
+	case level <= LevelTrace:
+		return log.DebugLevel // charm/log doesn't have trace, use debug
 	case level <= slog.LevelDebug:
 		return log.DebugLevel
 	case level <= slog.LevelInfo:
@@ -153,6 +162,8 @@ func slogToCharmLevel(level slog.Level) log.Level {
 // parseLevel converts a string log level to slog.Level.
 func parseLevel(level string) slog.Level {
 	switch strings.ToLower(level) {
+	case "trace":
+		return LevelTrace
 	case "debug":
 		return slog.LevelDebug
 	case "info":

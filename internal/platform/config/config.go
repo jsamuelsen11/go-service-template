@@ -88,7 +88,7 @@ type ServerConfig struct {
 
 // LogConfig contains logging settings.
 type LogConfig struct {
-	Level  string        `koanf:"level"  validate:"required,oneof=debug info warn error"`
+	Level  string        `koanf:"level"  validate:"required,oneof=trace debug info warn error"`
 	Format string        `koanf:"format" validate:"required,oneof=json text pretty"`
 	File   LogFileConfig `koanf:"file"`
 }

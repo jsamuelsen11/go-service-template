@@ -180,7 +180,7 @@ func TestConfig_Validate_ServerConfig(t *testing.T) {
 
 func TestConfig_Validate_LogConfig(t *testing.T) {
 	t.Run("valid log levels", func(t *testing.T) {
-		levels := []string{"debug", "info", "warn", "error"}
+		levels := []string{"trace", "debug", "info", "warn", "error"}
 		for _, level := range levels {
 			t.Run(level, func(t *testing.T) {
 				cfg := validConfig()
