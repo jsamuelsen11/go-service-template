@@ -18,6 +18,11 @@ This document describes the architecture of the Go Service Template, which imple
       - [Adapters Layer (`/internal/adapters/`)](#adapters-layer-internaladapters)
       - [Platform Layer (`/internal/platform/`)](#platform-layer-internalplatform)
     - [Scaling to Multiple Domains](#scaling-to-multiple-domains)
+    - [Domain-Driven Design Concepts](#domain-driven-design-concepts)
+      - [Use Cases vs Domain Services](#use-cases-vs-domain-services)
+      - [Orchestration Patterns](#orchestration-patterns)
+      - [Transaction Management with Saga Pattern](#transaction-management-with-saga-pattern)
+      - [Aggregate Boundaries for API Call Grouping](#aggregate-boundaries-for-api-call-grouping)
     - [Context](#context)
   - [Middleware Pipeline](#middleware-pipeline)
     - [Inbound Middleware (HTTP Server)](#inbound-middleware-http-server)
@@ -622,6 +627,214 @@ To migrate from single domain to multiple domains:
 
 See [ADR-0001](./adr/0001-hexagonal-architecture.md) for the foundational architecture
 decision.
+
+### Domain-Driven Design Concepts
+
+This section describes how DDD tactical patterns are applied in this service template.
+
+#### Use Cases vs Domain Services
+
+The template distinguishes between two types of services:
+
+| Aspect           | Application Service (Use Case)  | Domain Service                   |
+| ---------------- | ------------------------------- | -------------------------------- |
+| **Location**     | `/internal/app/`                | `/internal/domain/`              |
+| **Purpose**      | Orchestrates workflows          | Encapsulates pure business logic |
+| **Dependencies** | Ports, domain services, logging | None (pure functions)            |
+| **I/O**          | Yes (via ports)                 | Never                            |
+| **Example**      | `QuoteService.GetRandomQuote()` | `Quote.Validate()`               |
+
+**Application Services (Use Cases):**
+
+Application services coordinate multiple domain operations, call external services through ports,
+handle logging/tracing, and manage transactions.
+
+```go
+// internal/app/quote_service.go - Application Service
+func (s *QuoteService) GetRandomQuote(ctx context.Context) (*domain.Quote, error) {
+    s.logger.InfoContext(ctx, "fetching random quote")
+
+    // Orchestrates: calls port, handles errors, logs
+    quote, err := s.quoteClient.GetRandomQuote(ctx)
+    if err != nil {
+        s.logger.ErrorContext(ctx, "failed to fetch random quote",
+            slog.Any("error", err))
+        return nil, err
+    }
+
+    return quote, nil
+}
+```
+
+**Domain Services:**
+
+Domain services contain pure business logic with no infrastructure dependencies.
+They can be tested without mocks and belong in `/internal/domain/` alongside entities.
+
+```go
+// internal/domain/pricing.go - Domain Service (Pure Logic)
+func CalculateDiscount(order *Order, user *User) Money {
+    // Pure business rule - no I/O, no logging
+    if user.IsPremium && order.Total.Amount > 10000 {
+        return Money{Amount: order.Total.Amount / 10, Currency: order.Total.Currency}
+    }
+    return Money{Amount: 0, Currency: order.Total.Currency}
+}
+```
+
+#### Orchestration Patterns
+
+Application services coordinate multiple operations using two patterns:
+
+**Sequential Orchestration:**
+
+Simple, synchronous execution where each step must complete before the next:
+
+```go
+func (s *OrderService) CreateOrder(ctx context.Context, req CreateOrderRequest) (*Order, error) {
+    // Step 1: Validate
+    if err := req.Validate(); err != nil {
+        return nil, err
+    }
+
+    // Step 2: Check inventory
+    available, err := s.inventoryClient.Check(ctx, req.Items)
+    if err != nil {
+        return nil, fmt.Errorf("checking inventory: %w", err)
+    }
+
+    // Step 3: Create order
+    order, err := s.orderRepo.Create(ctx, req.ToOrder())
+    if err != nil {
+        return nil, fmt.Errorf("creating order: %w", err)
+    }
+
+    return order, nil
+}
+```
+
+**Parallel Orchestration:**
+
+For independent operations that can run concurrently:
+
+```go
+func (s *DashboardService) GetDashboard(ctx context.Context, userID string) (*Dashboard, error) {
+    var (
+        wg       sync.WaitGroup
+        userErr  error
+        orderErr error
+        user     *User
+        orders   []*Order
+    )
+
+    wg.Add(2)
+
+    go func() {
+        defer wg.Done()
+        user, userErr = s.userClient.GetByID(ctx, userID)
+    }()
+
+    go func() {
+        defer wg.Done()
+        orders, orderErr = s.orderClient.ListByUser(ctx, userID)
+    }()
+
+    wg.Wait()
+
+    if userErr != nil {
+        return nil, fmt.Errorf("fetching user: %w", userErr)
+    }
+    if orderErr != nil {
+        return nil, fmt.Errorf("fetching orders: %w", orderErr)
+    }
+
+    return &Dashboard{User: user, Orders: orders}, nil
+}
+```
+
+#### Transaction Management with Saga Pattern
+
+For operations that must succeed or fail together across multiple services,
+use the Saga pattern with compensating actions.
+
+**Location:** `/internal/app/context/`
+
+```go
+// Action interface from internal/app/context/actions.go
+type Action interface {
+    Execute(ctx context.Context) error
+    Rollback(ctx context.Context) error
+    Description() string
+}
+```
+
+##### Example: Order Fulfillment Saga
+
+```go
+func (s *FulfillmentService) FulfillOrder(ctx context.Context, orderID string) error {
+    rc := appctx.New(ctx)
+
+    // Phase 1: Fetch data with memoization
+    order, err := rc.GetOrFetch("order:"+orderID, func(ctx context.Context) (any, error) {
+        return s.orderClient.GetByID(ctx, orderID)
+    })
+    if err != nil {
+        return err
+    }
+
+    // Phase 2: Stage compensating actions
+    _ = rc.AddAction(&ReserveInventoryAction{Items: order.(*Order).Items})
+    _ = rc.AddAction(&ChargePaymentAction{Amount: order.(*Order).Total})
+    _ = rc.AddAction(&CreateShipmentAction{OrderID: orderID})
+
+    // Execute all or rollback on failure
+    return rc.Commit(ctx)
+}
+```
+
+**Saga Rollback Flow:**
+
+```text
+Execute: ReserveInventory → ChargePayment → CreateShipment (FAILS)
+Rollback: ← ChargePayment ← ReserveInventory
+```
+
+On failure, `Commit()` automatically rolls back executed actions in reverse order.
+See [Using Request Context](./playbook/using-request-context.md) for implementation details.
+
+#### Aggregate Boundaries for API Call Grouping
+
+When orchestrating multiple API calls, group related data fetches considering:
+
+1. **Consistency Requirements**: Data that must be consistent should be fetched together
+2. **Failure Isolation**: Independent data can fail independently
+3. **Caching Strategy**: Use Request Context memoization for reused data
+
+##### Example: Order Processing Aggregate
+
+```go
+// Order aggregate: order + line items + shipping address
+// These are always needed together and must be consistent
+func (s *OrderService) GetOrderAggregate(ctx context.Context, orderID string) (*OrderAggregate, error) {
+    rc := appctx.New(ctx)
+
+    // Fetch order (cached for subsequent use)
+    order, err := rc.GetOrFetch("order:"+orderID, s.fetchOrder(orderID))
+    if err != nil {
+        return nil, err
+    }
+
+    // Fetch related data
+    items, _ := rc.GetOrFetch("items:"+orderID, s.fetchItems(orderID))
+    address, _ := rc.GetOrFetch("address:"+order.(*Order).AddressID, s.fetchAddress)
+
+    return &OrderAggregate{
+        Order:   order.(*Order),
+        Items:   items.([]*LineItem),
+        Address: address.(*Address),
+    }, nil
+}
+```
 
 ### Context
 
