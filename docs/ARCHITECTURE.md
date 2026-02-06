@@ -1039,10 +1039,14 @@ All logs use structured JSON format with consistent fields:
 
 | Level   | Usage                                              |
 | ------- | -------------------------------------------------- |
+| `TRACE` | Verbose external call debugging (custom level)     |
 | `DEBUG` | Detailed debugging information                     |
 | `INFO`  | Normal operational messages                        |
 | `WARN`  | Warning conditions (circuit breaker state changes) |
 | `ERROR` | Error conditions requiring attention               |
+
+For comprehensive logging guidelines including level selection, layer-specific patterns,
+file rotation, and ACL trace logging, see [LOGGING.md](./LOGGING.md).
 
 ---
 
