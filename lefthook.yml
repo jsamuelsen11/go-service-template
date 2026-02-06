@@ -74,9 +74,7 @@ pre-push:
   parallel: true
   commands:
     go-test:
-      glob: "*.go"
-      run: go tool gotestsum --format ${TEST_FORMAT:-testdox} -- ./...
+      run: task test
 
     go-build:
-      glob: "*.go"
-      run: go build ./...
+      run: task build

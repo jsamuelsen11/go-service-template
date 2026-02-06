@@ -13,6 +13,7 @@ import (
 
 	"github.com/jsamuelsen/go-service-template/internal/adapters/clients"
 	"github.com/jsamuelsen/go-service-template/internal/domain"
+	"github.com/jsamuelsen/go-service-template/internal/platform/logging"
 )
 
 // QuoteClientConfig contains configuration for the quote client.
@@ -63,31 +64,45 @@ type quotableResponse struct {
 // GetRandomQuote fetches a random quote from the external API.
 // Implements ports.QuoteClient.
 func (c *QuoteClient) GetRandomQuote(ctx context.Context) (*domain.Quote, error) {
+	const path = "/random"
+	c.logger.Log(ctx, logging.LevelTrace, "starting request", slog.String("path", path))
 	c.logger.DebugContext(ctx, "fetching random quote")
 
-	resp, err := c.client.Get(ctx, "/random")
+	resp, err := c.client.Get(ctx, path)
 	if err != nil {
 		return nil, domain.NewUnavailableError("quote-service", err.Error())
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	c.logger.Log(ctx, logging.LevelTrace, "request complete",
+		slog.String("path", path),
+		slog.Int("status", resp.StatusCode))
 
 	if resp.StatusCode != http.StatusOK {
 		return nil, c.handleErrorResponse(resp)
 	}
 
-	return c.parseQuoteResponse(resp.Body)
+	return c.parseQuoteResponse(ctx, resp.Body)
 }
 
 // GetQuoteByID fetches a specific quote by its identifier.
 // Implements ports.QuoteClient.
 func (c *QuoteClient) GetQuoteByID(ctx context.Context, id string) (*domain.Quote, error) {
+	path := "/quotes/" + id
+	c.logger.Log(ctx, logging.LevelTrace, "starting request",
+		slog.String("path", path),
+		slog.String("quote_id", id))
 	c.logger.DebugContext(ctx, "fetching quote by ID", slog.String("quote_id", id))
 
-	resp, err := c.client.Get(ctx, "/quotes/"+id)
+	resp, err := c.client.Get(ctx, path)
 	if err != nil {
 		return nil, domain.NewUnavailableError("quote-service", err.Error())
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	c.logger.Log(ctx, logging.LevelTrace, "request complete",
+		slog.String("path", path),
+		slog.Int("status", resp.StatusCode))
 
 	if resp.StatusCode == http.StatusNotFound {
 		return nil, domain.NewNotFoundError("quote", id)
@@ -97,12 +112,12 @@ func (c *QuoteClient) GetQuoteByID(ctx context.Context, id string) (*domain.Quot
 		return nil, c.handleErrorResponse(resp)
 	}
 
-	return c.parseQuoteResponse(resp.Body)
+	return c.parseQuoteResponse(ctx, resp.Body)
 }
 
 // parseQuoteResponse reads and translates the external DTO to a domain Quote.
 // This is the core ACL translation function.
-func (c *QuoteClient) parseQuoteResponse(body io.Reader) (*domain.Quote, error) {
+func (c *QuoteClient) parseQuoteResponse(ctx context.Context, body io.Reader) (*domain.Quote, error) {
 	var external quotableResponse
 
 	err := json.NewDecoder(body).Decode(&external)
@@ -111,7 +126,13 @@ func (c *QuoteClient) parseQuoteResponse(body io.Reader) (*domain.Quote, error) 
 	}
 
 	// Translate external DTO to domain entity
-	return c.translateToDomain(&external), nil
+	quote := c.translateToDomain(&external)
+
+	c.logger.Log(ctx, logging.LevelTrace, "translated external DTO to domain",
+		slog.String("quote_id", quote.ID),
+		slog.String("author", quote.Author))
+
+	return quote, nil
 }
 
 // translateToDomain converts the external API response to a domain Quote.
