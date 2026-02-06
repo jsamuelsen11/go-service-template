@@ -23,6 +23,11 @@ This document describes the architecture of the Go Service Template, which imple
       - [Orchestration Patterns](#orchestration-patterns)
       - [Transaction Management with Saga Pattern](#transaction-management-with-saga-pattern)
       - [Aggregate Boundaries for API Call Grouping](#aggregate-boundaries-for-api-call-grouping)
+    - [Domain Extensibility Patterns](#domain-extensibility-patterns)
+      - [Multiple Bounded Contexts](#multiple-bounded-contexts)
+      - [Entity Type Hierarchies (Composition-Based)](#entity-type-hierarchies-composition-based)
+      - [Plugin/Strategy Patterns with Interfaces](#pluginstrategy-patterns-with-interfaces)
+      - [Extensibility Decision Guide](#extensibility-decision-guide)
     - [Context](#context)
   - [Middleware Pipeline](#middleware-pipeline)
     - [Inbound Middleware (HTTP Server)](#inbound-middleware-http-server)
@@ -835,6 +840,178 @@ func (s *OrderService) GetOrderAggregate(ctx context.Context, orderID string) (*
     }, nil
 }
 ```
+
+### Domain Extensibility Patterns
+
+This section describes patterns for extending the domain as the service grows.
+
+#### Multiple Bounded Contexts
+
+When a service evolves to handle multiple related domains, organize code by bounded context:
+
+```text
+internal/
+├── domain/
+│   ├── quotes/           # Quotes bounded context
+│   │   ├── quote.go
+│   │   ├── author.go
+│   │   └── errors.go
+│   ├── orders/           # Orders bounded context
+│   │   ├── order.go
+│   │   ├── line_item.go
+│   │   └── errors.go
+│   └── shared/           # Shared kernel
+│       └── money.go
+├── ports/
+│   ├── quotes/
+│   │   └── services.go
+│   └── orders/
+│       └── services.go
+└── app/
+    ├── quotes/
+    │   └── quote_service.go
+    └── orders/
+        └── order_service.go
+```
+
+**Guidelines:**
+
+- Each bounded context has its own package
+- Shared kernel contains only value objects used across contexts
+- Contexts communicate through application layer, not directly
+
+#### Entity Type Hierarchies (Composition-Based)
+
+Go favors composition over inheritance. For entity type variations:
+
+##### Embedded Common Fields
+
+```go
+// Base fields embedded in specific types
+type BaseEntity struct {
+    ID        string
+    CreatedAt time.Time
+    UpdatedAt time.Time
+    Version   int
+}
+
+type Quote struct {
+    BaseEntity        // Embedded
+    Content   string
+    Author    string
+    Tags      []string
+}
+
+type Order struct {
+    BaseEntity        // Embedded
+    UserID    string
+    Status    OrderStatus
+    Items     []LineItem
+    Total     Money
+}
+```
+
+##### Type Field with Behavior Switch
+
+```go
+type Notification struct {
+    ID      string
+    Type    NotificationType
+    Payload any
+}
+
+type NotificationType string
+
+const (
+    NotificationEmail NotificationType = "email"
+    NotificationSMS   NotificationType = "sms"
+    NotificationPush  NotificationType = "push"
+)
+
+// Behavior varies by type
+func (n *Notification) Send(ctx context.Context, sender NotificationSender) error {
+    switch n.Type {
+    case NotificationEmail:
+        return sender.SendEmail(ctx, n.Payload.(*EmailPayload))
+    case NotificationSMS:
+        return sender.SendSMS(ctx, n.Payload.(*SMSPayload))
+    case NotificationPush:
+        return sender.SendPush(ctx, n.Payload.(*PushPayload))
+    default:
+        return fmt.Errorf("unknown notification type: %s", n.Type)
+    }
+}
+```
+
+#### Plugin/Strategy Patterns with Interfaces
+
+For behavior that varies at runtime, use interfaces:
+
+##### Strategy Pattern Example: Payment Processing
+
+```go
+// ports/payment.go
+type PaymentProcessor interface {
+    Charge(ctx context.Context, amount Money, source PaymentSource) (*Charge, error)
+    Refund(ctx context.Context, chargeID string) error
+}
+
+// Multiple implementations can exist:
+// - adapters/payments/stripe.go
+// - adapters/payments/paypal.go
+```
+
+##### Plugin Pattern Example: Feature Flags
+
+```go
+// ports/featureflags.go - Already exists in this template
+type FeatureFlags interface {
+    IsEnabled(ctx context.Context, flag string, defaultValue bool) bool
+    GetString(ctx context.Context, flag string, defaultValue string) string
+    GetInt(ctx context.Context, flag string, defaultValue int) int
+    GetFloat(ctx context.Context, flag string, defaultValue float64) float64
+    GetJSON(ctx context.Context, flag string, target any) error
+}
+```
+
+Implementations can be swapped at runtime:
+
+- `launchdarkly.Client` - LaunchDarkly SDK
+- `unleash.Client` - Unleash SDK
+- `config.StaticFlags` - Config-file based (for testing)
+- `memory.MockFlags` - In-memory (for unit tests)
+
+##### Registering Implementations
+
+```go
+// main.go - Select implementation at runtime
+var flags ports.FeatureFlags
+
+switch cfg.FeatureFlags.Provider {
+case "launchdarkly":
+    flags = launchdarkly.New(cfg.FeatureFlags.SDKKey)
+case "unleash":
+    flags = unleash.New(cfg.FeatureFlags.URL)
+default:
+    flags = config.NewStaticFlags(cfg.FeatureFlags.Static)
+}
+
+svc := app.NewService(app.ServiceConfig{
+    Client: serviceClient,
+    Flags:  flags,
+    Logger: logger,
+})
+```
+
+#### Extensibility Decision Guide
+
+| Need                          | Pattern             | Example          |
+| ----------------------------- | ------------------- | ---------------- |
+| Different behavior per type   | Type field + switch | NotificationType |
+| Shared fields across entities | Embedded struct     | BaseEntity       |
+| Swappable implementations     | Interface + DI      | PaymentProcessor |
+| Runtime behavior selection    | Strategy pattern    | FeatureFlags     |
+| Growing domain complexity     | Bounded contexts    | quotes/, orders/ |
 
 ### Context
 
