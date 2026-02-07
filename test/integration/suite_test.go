@@ -148,15 +148,36 @@ func (tc *testContext) theResponseShouldContain(text string) error {
 }
 
 // TestFeatures runs the GoDog BDD test suite.
+// Supports the following environment variables:
+//   - GODOG_TAGS: filter scenarios by tags (e.g., "@smoke && ~@requires-network")
+//   - GODOG_FORMAT: output format ("pretty", "cucumber", "junit"). Default: "pretty"
+//   - GODOG_OUTPUT_FILE: write output to file instead of stdout (useful with cucumber/junit formats)
 func TestFeatures(t *testing.T) {
+	format := os.Getenv("GODOG_FORMAT")
+	if format == "" {
+		format = "pretty"
+	}
+
+	opts := &godog.Options{
+		Format:   format,
+		Paths:    []string{"../features"},
+		TestingT: t,
+		Tags:     os.Getenv("GODOG_TAGS"),
+	}
+
+	// If output file specified, redirect output to file.
+	if outputFile := os.Getenv("GODOG_OUTPUT_FILE"); outputFile != "" {
+		f, err := os.Create(outputFile)
+		if err != nil {
+			t.Fatalf("failed to create output file %s: %v", outputFile, err)
+		}
+		defer f.Close()
+		opts.Output = f
+	}
+
 	suite := godog.TestSuite{
 		ScenarioInitializer: InitializeScenario,
-		Options: &godog.Options{
-			Format:   "pretty",
-			Paths:    []string{"../features"},
-			TestingT: t,
-			Tags:     os.Getenv("GODOG_TAGS"),
-		},
+		Options:             opts,
 	}
 
 	if suite.Run() != 0 {

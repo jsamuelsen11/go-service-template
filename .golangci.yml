@@ -64,6 +64,21 @@ linters:
     dupl:
       threshold: 100
 
+  exclusions:
+    rules:
+      # Relax linters for test files
+      - path: _test\.go
+        linters:
+          - gocritic
+          - gosec
+          - dupl
+          - mnd
+
+      # Common patterns that are safe to ignore
+      - linters:
+          - errcheck
+        text: "Error return value of .*Write.* is not checked"
+
 formatters:
   enable:
     - goimports
@@ -78,17 +93,3 @@ issues:
   exclude-use-default: false
   max-issues-per-linter: 0
   max-same-issues: 0
-
-  exclude-rules:
-    # Relax linters for test files
-    - path: _test\.go
-      linters:
-        - gocritic
-        - gosec
-        - dupl
-        - mnd
-
-    # Common patterns that are safe to ignore
-    - linters:
-        - errcheck
-      text: "Error return value of .*Write.* is not checked"

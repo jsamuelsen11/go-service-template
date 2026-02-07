@@ -828,10 +828,10 @@ telnet <component-host> <port>
 
    ```bash
    go version
-   # Should match: go 1.25.6
+   # Should match: go 1.25.7
 
    # If wrong version, use mise to install correct version
-   mise use go@1.25.6
+   mise use go@1.25.7
    ```
 
 3. **Clean build cache:**
@@ -1126,7 +1126,7 @@ telnet <component-host> <port>
 | ---------------- | ----------------------------------- |
 | Wrong Go version | Build errors, syntax not recognized |
 | mise not found   | `mise: command not found`           |
-| Version mismatch | `go.mod requires go 1.25.6`         |
+| Version mismatch | `go.mod requires go 1.25.7`         |
 
 **Causes:**
 
@@ -1153,14 +1153,14 @@ telnet <component-host> <port>
 3. **Install correct Go version:**
 
    ```bash
-   mise use go@1.25.6
+   mise use go@1.25.7
    ```
 
 4. **Verify version:**
 
    ```bash
    go version
-   # Expected: go version go1.25.6 ...
+   # Expected: go version go1.25.7 ...
    ```
 
 5. **Check mise status:**

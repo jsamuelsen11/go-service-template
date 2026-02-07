@@ -19,7 +19,8 @@ func TestNew(t *testing.T) {
 }
 
 func TestFromContext_NilContext(t *testing.T) {
-	rc := FromContext(nil)
+	//nolint:staticcheck // SA1012: intentionally testing nil context guard
+	rc := FromContext(nil) //nolint:staticcheck
 	assert.Nil(t, rc)
 }
 

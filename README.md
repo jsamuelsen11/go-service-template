@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml)
 [![Coverage](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/badge.svg)](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/report.json)
-[![Go Version](https://img.shields.io/badge/Go-1.25.6-00ADD8?logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.25.7-00ADD8?logo=go)](https://go.dev/)
 
 Enterprise-grade Go backend service template implementing Clean/Hexagonal Architecture.
 
@@ -59,14 +59,14 @@ For detailed architecture documentation, see [docs/ARCHITECTURE.md](docs/ARCHITE
 
 ### Prerequisites
 
-**Go 1.25.6+** (via [Mise](https://mise.jdx.dev/)):
+**Go 1.25.7+** (via [Mise](https://mise.jdx.dev/)):
 
 ```bash
 # Install Mise (if not already installed)
 curl https://mise.run | sh
 
 # Install Go
-mise use go@1.25.6
+mise use go@1.25.7
 ```
 
 **Task** (build automation):
