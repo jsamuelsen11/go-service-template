@@ -72,16 +72,16 @@ task run    # Hot reload server on port 8080
 
 ### Key Commands
 
-| Command                 | Description                        |
-| ----------------------- | ---------------------------------- |
-| `task run`              | Start server with hot reload       |
-| `task test`             | Run unit tests with race detection |
-| `task test:integration` | Run BDD integration tests          |
-| `task lint`             | Run golangci-lint                  |
-| `task fmt`              | Format code with gofumpt           |
-| `task ci`               | Full CI pipeline locally           |
-| `task coverage`         | Generate coverage report           |
-| `task generate`         | Regenerate mocks                   |
+| Command                       | Description                        |
+| ----------------------------- | ---------------------------------- |
+| `task run`                    | Start server with hot reload       |
+| `task test`                   | Run unit tests with race detection |
+| `task test:integration:smoke` | Run BDD integration tests (smoke)  |
+| `task lint`                   | Run golangci-lint                  |
+| `task fmt`                    | Format code with gofumpt           |
+| `task ci`                     | Full CI pipeline locally           |
+| `task coverage`               | Generate coverage report           |
+| `task generate`               | Regenerate mocks                   |
 
 ---
 
@@ -274,7 +274,7 @@ Ensure your changes pass all checks:
 
 - [ ] `task test` passes (unit tests)
 - [ ] `task lint` passes (no linting errors)
-- [ ] `task test:integration` passes (if applicable)
+- [ ] `task test:integration:smoke` passes (if applicable)
 - [ ] New code has appropriate test coverage
 - [ ] Documentation updated (if adding features)
 
@@ -326,12 +326,12 @@ Include:
 
 ### Test Types
 
-| Type        | Command                 | Purpose                     |
-| ----------- | ----------------------- | --------------------------- |
-| Unit        | `task test`             | Test individual components  |
-| Integration | `task test:integration` | Test component interactions |
-| Benchmark   | `task test:benchmark`   | Performance measurements    |
-| Load        | `task test:load`        | Stress testing with k6      |
+| Type        | Command                       | Purpose                     |
+| ----------- | ----------------------------- | --------------------------- |
+| Unit        | `task test`                   | Test individual components  |
+| Integration | `task test:integration:smoke` | Test component interactions |
+| Benchmark   | `task test:benchmark`         | Performance measurements    |
+| Load        | `task test:load`              | Stress testing with k6      |
 
 ### Writing Tests
 

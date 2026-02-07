@@ -367,17 +367,17 @@ task run
 
 ```bash
 # Terminal 2: Run integration tests
-task test:integration
+task test:integration:smoke
 
 # Or with go test directly
 go test -tags integration -v ./test/integration/...
 
 # Run specific tags
-GODOG_TAGS="@smoke" task test:integration
-GODOG_TAGS="@health && ~@requires-network" task test:integration
+GODOG_TAGS="@smoke" task test:integration:smoke
+GODOG_TAGS="@health && ~@requires-network" task test:integration:smoke
 
 # Against different environment
-BASE_URL=http://staging:8080 task test:integration
+BASE_URL=http://staging:8080 task test:integration:smoke
 ```
 
 ### Tag Expressions

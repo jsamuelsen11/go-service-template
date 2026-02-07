@@ -48,7 +48,7 @@ tasks:
         printf "\n"
         printf "${YELLOW}Testing:${RESET}\n"
         printf "  ${GREEN}task test${RESET}                   Run unit tests with race detection\n"
-        printf "  ${GREEN}task test:integration${RESET}       Run BDD integration tests (smoke)\n"
+        printf "  ${GREEN}task test:integration:smoke${RESET}  Run BDD integration tests (smoke only)\n"
         printf "  ${GREEN}task test:integration:all${RESET}   Run all BDD integration tests\n"
         printf "  ${GREEN}task test:integration:report${RESET} Generate JSON integration report\n"
         printf "  ${GREEN}task test:benchmark${RESET}         Run Go benchmarks\n"
@@ -172,15 +172,15 @@ tasks:
     cmds:
       - go tool gotestsum --format {{.TEST_FORMAT}} -- -race ./...
 
-  test:integration:
-    desc: Run GoDog integration tests (smoke only)
+  test:integration:smoke:
+    desc: Run GoDog integration tests (smoke only, @smoke && ~@requires-network)
     env:
       GODOG_TAGS: "@smoke && ~@requires-network"
     cmds:
       - go test -tags integration -v ./test/integration/...
 
   test:integration:all:
-    desc: Run all GoDog integration tests
+    desc: Run all GoDog integration tests (no tag filtering)
     cmds:
       - go test -tags integration -v ./test/integration/...
 
@@ -216,7 +216,7 @@ tasks:
     desc: Run full E2E test suite
     cmds:
       - task: test
-      - task: test:integration
+      - task: test:integration:smoke
 
   test:benchmark:
     desc: Run Go benchmarks

@@ -132,7 +132,7 @@ task vuln              # Run govulncheck for vulnerabilities
 
 ```bash
 task test              # Run unit tests with race detection
-task test:integration  # Run GoDog BDD integration tests
+task test:integration:smoke  # Run GoDog BDD integration tests (smoke)
 task test:e2e          # Run full E2E test suite
 task test:benchmark    # Run Go benchmarks
 task test:load         # Run k6 load tests
@@ -247,10 +247,10 @@ Runs all unit tests with race detection using [gotestsum](https://github.com/got
 ### Integration Tests
 
 ```bash
-task test:integration
+task test:integration:smoke
 ```
 
-Runs GoDog/Cucumber BDD tests. Requires the service to be running.
+Runs GoDog/Cucumber BDD smoke tests. Requires the service to be running.
 
 ### Benchmark Tests
 
