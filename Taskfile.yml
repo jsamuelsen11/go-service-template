@@ -235,7 +235,7 @@ tasks:
     desc: Generate test coverage report
     cmds:
       - go tool gotestsum --format {{.TEST_FORMAT}} -- -race -coverprofile={{.COVERAGE_FILE}} -covermode=atomic ./...
-      - cmd: grep -v '/mocks/' {{.COVERAGE_FILE}} > {{.COVERAGE_FILE}}.tmp && mv {{.COVERAGE_FILE}}.tmp {{.COVERAGE_FILE}}
+      - cmd: grep -v -E '/mocks/|cmd/service|platform/telemetry' {{.COVERAGE_FILE}} > {{.COVERAGE_FILE}}.tmp && mv {{.COVERAGE_FILE}}.tmp {{.COVERAGE_FILE}}
         silent: true
       - go tool cover -func={{.COVERAGE_FILE}}
 
