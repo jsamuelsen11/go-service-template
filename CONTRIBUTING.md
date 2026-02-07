@@ -23,7 +23,7 @@ Follow the setup instructions in the [README](README.md#installation):
 ```bash
 # Install prerequisites
 curl https://mise.run | sh
-mise use go@1.25.6
+mise use go@1.25.7
 brew install go-task
 
 # Clone and Set Up

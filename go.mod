@@ -1,7 +1,7 @@
 // Module path is a template - replace with your actual module path when using this template
 module github.com/jsamuelsen/go-service-template
 
-go 1.25.6
+go 1.25.7
 
 require (
 	github.com/charmbracelet/log v0.4.2
