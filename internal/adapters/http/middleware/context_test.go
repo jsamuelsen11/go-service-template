@@ -45,21 +45,21 @@ func TestContextWithCorrelationID(t *testing.T) {
 
 func TestIDFromContext_NotSet(t *testing.T) {
 	t.Run("request id from nil context", func(t *testing.T) {
-		assert.Equal(t, "", RequestIDFromContext(nil)) //nolint:staticcheck // Testing nil handling
+		assert.Empty(t, RequestIDFromContext(nil)) //nolint:staticcheck // Testing nil handling
 	})
 
 	t.Run("correlation id from nil context", func(t *testing.T) {
-		assert.Equal(t, "", CorrelationIDFromContext(nil)) //nolint:staticcheck // Testing nil handling
+		assert.Empty(t, CorrelationIDFromContext(nil)) //nolint:staticcheck // Testing nil handling
 	})
 
 	t.Run("request id from empty background context", func(t *testing.T) {
 		ctx := context.Background()
-		assert.Equal(t, "", RequestIDFromContext(ctx))
+		assert.Empty(t, RequestIDFromContext(ctx))
 	})
 
 	t.Run("correlation id from empty background context", func(t *testing.T) {
 		ctx := context.Background()
-		assert.Equal(t, "", CorrelationIDFromContext(ctx))
+		assert.Empty(t, CorrelationIDFromContext(ctx))
 	})
 }
 

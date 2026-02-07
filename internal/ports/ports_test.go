@@ -30,7 +30,7 @@ func TestNewHealthRegistry(t *testing.T) {
 
 	require.NotNil(t, registry)
 	assert.NotNil(t, registry.checkers)
-	assert.Len(t, registry.checkers, 0)
+	assert.Empty(t, registry.checkers)
 }
 
 // TestRegister_Success verifies that a checker can be registered successfully.
@@ -57,7 +57,7 @@ func TestRegister_DuplicateName(t *testing.T) {
 	err = registry.Register(checker2)
 
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrDuplicateChecker)
+	require.ErrorIs(t, err, ErrDuplicateChecker)
 	assert.Contains(t, err.Error(), "database")
 	assert.Len(t, registry.checkers, 1)
 }
@@ -72,7 +72,7 @@ func TestCheckAll_NoCheckers(t *testing.T) {
 	require.NotNil(t, result)
 	assert.Equal(t, HealthStatusHealthy, result.Status)
 	assert.NotNil(t, result.Checks)
-	assert.Len(t, result.Checks, 0)
+	assert.Empty(t, result.Checks)
 	assert.False(t, result.Timestamp.IsZero())
 }
 

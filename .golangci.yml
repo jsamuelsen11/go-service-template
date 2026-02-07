@@ -31,6 +31,11 @@ linters:
     - dupl # Code duplication
     - mnd # Magic number detector
 
+    # Test quality
+    - thelper # Checks t.Helper() usage in test helpers
+    - tparallel # Checks t.Parallel() usage in tests
+    - testifylint # Testify best practices
+
   settings:
     errcheck:
       check-type-assertions: true
@@ -64,6 +69,9 @@ linters:
     dupl:
       threshold: 100
 
+    testifylint:
+      enable-all: true
+
   exclusions:
     rules:
       # Relax linters for test files
@@ -73,6 +81,13 @@ linters:
           - gosec
           - dupl
           - mnd
+
+      # Test-only linters — exclude from non-test files
+      - path-except: _test\.go
+        linters:
+          - thelper
+          - tparallel
+          - testifylint
 
       # Common patterns that are safe to ignore
       - linters:

@@ -141,7 +141,7 @@ func TestConfig_Validate_ServerConfig(t *testing.T) {
 
 				err := cfg.Validate()
 				if tt.wantErr {
-					assert.Error(t, err)
+					require.Error(t, err)
 					assert.Contains(t, err.Error(), "server.port")
 				} else {
 					assert.NoError(t, err)
@@ -351,7 +351,7 @@ func TestConfig_Validate_TelemetryConfig(t *testing.T) {
 
 				err := cfg.Validate()
 				if tt.wantErr {
-					assert.Error(t, err)
+					require.Error(t, err)
 					assert.Contains(t, err.Error(), "telemetry.samplingrate")
 				} else {
 					assert.NoError(t, err)
@@ -450,7 +450,7 @@ func TestConfig_Validate_RetryConfig(t *testing.T) {
 
 				err := cfg.Validate()
 				if tt.wantErr {
-					assert.Error(t, err)
+					require.Error(t, err)
 					assert.Contains(t, err.Error(), "client.retry.maxattempts")
 				} else {
 					assert.NoError(t, err)
@@ -496,7 +496,7 @@ func TestConfig_Validate_RetryConfig(t *testing.T) {
 
 				err := cfg.Validate()
 				if tt.wantErr {
-					assert.Error(t, err)
+					require.Error(t, err)
 					assert.Contains(t, err.Error(), "client.retry.multiplier")
 				} else {
 					assert.NoError(t, err)

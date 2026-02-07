@@ -23,7 +23,7 @@ func TestLoad_DefaultValues(t *testing.T) {
 	assert.Equal(t, "info", cfg.Log.Level)
 	assert.Equal(t, "json", cfg.Log.Format)
 	assert.Equal(t, DefaultClientRetryMaxAttempts, cfg.Client.Retry.MaxAttempts)
-	assert.Equal(t, DefaultClientRetryMultiplier, cfg.Client.Retry.Multiplier)
+	assert.InEpsilon(t, DefaultClientRetryMultiplier, cfg.Client.Retry.Multiplier, 0.0001)
 	assert.Equal(t, DefaultClientCircuitMaxFailures, cfg.Client.CircuitBreaker.MaxFailures)
 }
 
@@ -108,7 +108,7 @@ func TestLoad_TelemetryDefaults(t *testing.T) {
 
 	assert.False(t, cfg.Telemetry.Enabled)
 	assert.Equal(t, "go-service-template", cfg.Telemetry.ServiceName)
-	assert.Equal(t, 1.0, cfg.Telemetry.SamplingRate)
+	assert.InEpsilon(t, 1.0, cfg.Telemetry.SamplingRate, 0.0001)
 }
 
 // TestLoad_ClientDefaults tests that HTTP client defaults are set correctly.
@@ -120,7 +120,7 @@ func TestLoad_ClientDefaults(t *testing.T) {
 	assert.Equal(t, DefaultClientRetryMaxAttempts, cfg.Client.Retry.MaxAttempts)
 	assert.Equal(t, 100*time.Millisecond, cfg.Client.Retry.InitialInterval)
 	assert.Equal(t, 5*time.Second, cfg.Client.Retry.MaxInterval)
-	assert.Equal(t, DefaultClientRetryMultiplier, cfg.Client.Retry.Multiplier)
+	assert.InEpsilon(t, DefaultClientRetryMultiplier, cfg.Client.Retry.Multiplier, 0.0001)
 	assert.Equal(t, DefaultClientCircuitMaxFailures, cfg.Client.CircuitBreaker.MaxFailures)
 	assert.Equal(t, 30*time.Second, cfg.Client.CircuitBreaker.Timeout)
 	assert.Equal(t, DefaultClientCircuitHalfOpenLimit, cfg.Client.CircuitBreaker.HalfOpenLimit)
@@ -138,5 +138,5 @@ func TestDefaults(t *testing.T) {
 	assert.Equal(t, "info", d["log.level"])
 	assert.Equal(t, "json", d["log.format"])
 	assert.Equal(t, DefaultClientRetryMaxAttempts, d["client.retry.max_attempts"])
-	assert.Equal(t, DefaultClientRetryMultiplier, d["client.retry.multiplier"])
+	assert.InEpsilon(t, DefaultClientRetryMultiplier, d["client.retry.multiplier"], 0.0001)
 }

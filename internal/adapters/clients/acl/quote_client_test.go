@@ -125,7 +125,9 @@ func TestGetRandomQuote_Success(t *testing.T) {
 			"author":  "Mahatma Gandhi",
 			"tags":    []string{"inspirational", "change"},
 		})
-		require.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 	})
 
 	client := setupQuoteClient(t, handler)
@@ -166,7 +168,9 @@ func TestGetRandomQuote_InvalidJSON(t *testing.T) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("invalid json {"))
-		require.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 	})
 
 	client := setupQuoteClient(t, handler)
@@ -193,7 +197,9 @@ func TestGetQuoteByID_Success(t *testing.T) {
 			"author":  "Steve Jobs",
 			"tags":    []string{"work", "passion"},
 		})
-		require.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 	})
 
 	client := setupQuoteClient(t, handler)
@@ -256,7 +262,9 @@ func TestQuoteClient_Check_Success(t *testing.T) {
 			"author":  "System",
 			"tags":    []string{"health"},
 		})
-		require.NoError(t, err)
+		if !assert.NoError(t, err) {
+			return
+		}
 	})
 
 	client := setupQuoteClient(t, handler)
