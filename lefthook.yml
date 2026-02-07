@@ -78,3 +78,6 @@ pre-push:
 
     go-build:
       run: task build
+
+    govulncheck:
+      run: task vuln
