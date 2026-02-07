@@ -2,7 +2,6 @@ package acl
 
 import (
 	"context"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -53,7 +52,7 @@ func TestMapHTTPError_NotFound(t *testing.T) {
 
 	// Verify the entityID is set correctly
 	var notFoundErr *domain.NotFoundError
-	require.True(t, errors.As(err, &notFoundErr))
+	require.ErrorAs(t, err, &notFoundErr)
 	assert.Equal(t, "user-123", notFoundErr.ID)
 }
 
@@ -90,7 +89,7 @@ func TestMapHTTPError_ValidationWithDetails(t *testing.T) {
 	assert.True(t, domain.IsValidation(err), "expected ValidationError")
 
 	var validationErr *domain.ValidationError
-	require.True(t, errors.As(err, &validationErr))
+	require.ErrorAs(t, err, &validationErr)
 	assert.Equal(t, "email", validationErr.Field)
 }
 
@@ -209,7 +208,7 @@ func TestMapExternalCode_NotFoundWithEntityID(t *testing.T) {
 	assert.True(t, domain.IsNotFound(err))
 
 	var notFoundErr *domain.NotFoundError
-	require.True(t, errors.As(err, &notFoundErr))
+	require.ErrorAs(t, err, &notFoundErr)
 	assert.Equal(t, "user-456", notFoundErr.ID)
 }
 
@@ -434,7 +433,7 @@ func TestUserServiceAdapter_GetByID_NotFound(t *testing.T) {
 
 	// Verify the entityID is set correctly in the error
 	var notFoundErr *domain.NotFoundError
-	require.True(t, errors.As(err, &notFoundErr))
+	require.ErrorAs(t, err, &notFoundErr)
 	assert.Equal(t, "nonexistent", notFoundErr.ID)
 }
 

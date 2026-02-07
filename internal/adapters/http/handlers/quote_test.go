@@ -21,6 +21,7 @@ import (
 
 // setupQuoteHandler creates a QuoteHandler with a mock client for testing.
 func setupQuoteHandler(t *testing.T, setupMock func(*mocks.MockQuoteClient)) *QuoteHandler {
+	t.Helper()
 	mockClient := mocks.NewMockQuoteClient(t)
 	if setupMock != nil {
 		setupMock(mockClient)
@@ -126,6 +127,7 @@ func TestQuoteHandler_GetRandomQuote(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
 				var resp QuoteResponse
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				require.NoError(t, err)
@@ -142,6 +144,7 @@ func TestQuoteHandler_GetRandomQuote(t *testing.T) {
 			},
 			expectedStatus: http.StatusServiceUnavailable,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
 				var resp dto.ErrorResponse
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				require.NoError(t, err)
@@ -188,6 +191,7 @@ func TestQuoteHandler_GetQuoteByID(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
 				var resp QuoteResponse
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				require.NoError(t, err)
@@ -202,6 +206,7 @@ func TestQuoteHandler_GetQuoteByID(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
 				var resp dto.ErrorResponse
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				require.NoError(t, err)
@@ -218,6 +223,7 @@ func TestQuoteHandler_GetQuoteByID(t *testing.T) {
 			},
 			expectedStatus: http.StatusNotFound,
 			checkResponse: func(t *testing.T, w *httptest.ResponseRecorder) {
+				t.Helper()
 				var resp dto.ErrorResponse
 				err := json.Unmarshal(w.Body.Bytes(), &resp)
 				require.NoError(t, err)

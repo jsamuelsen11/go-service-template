@@ -47,7 +47,7 @@ func closeBody(t *testing.T, resp *http.Response) {
 
 func TestNew_RequiresConfig(t *testing.T) {
 	_, err := New(nil)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "config is required")
 }
 
@@ -56,7 +56,7 @@ func TestNew_RequiresServiceName(t *testing.T) {
 	cfg.ServiceName = ""
 
 	_, err := New(cfg)
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Contains(t, err.Error(), "service name is required")
 }
 
@@ -168,7 +168,7 @@ func TestClient_MaxRetriesExceeded(t *testing.T) {
 
 	_, err = client.Get(context.Background(), "/test")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrMaxRetriesExceeded)
+	require.ErrorIs(t, err, ErrMaxRetriesExceeded)
 	assert.Equal(t, int32(3), atomic.LoadInt32(&attempts))
 }
 
@@ -268,7 +268,7 @@ func TestClient_Post(t *testing.T) {
 
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 	assert.Equal(t, "application/json", receivedContentType)
-	assert.Equal(t, `{"name": "test"}`, receivedBody)
+	assert.JSONEq(t, `{"name": "test"}`, receivedBody)
 }
 
 func TestClient_Put(t *testing.T) {
@@ -432,7 +432,7 @@ func TestClient_CircuitBreakerShortCircuitsWhenOpen(t *testing.T) {
 	// This request should be short-circuited without hitting the server
 	_, err = client.Get(context.Background(), "/test")
 	require.Error(t, err)
-	assert.ErrorIs(t, err, ErrCircuitOpen)
+	require.ErrorIs(t, err, ErrCircuitOpen)
 	assert.Equal(t, callsBefore, atomic.LoadInt32(&calls), "request should be short-circuited when circuit is open")
 }
 

@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 
@@ -21,7 +20,7 @@ func TestSentinelErrors_AreDistinct(t *testing.T) {
 	for i, a := range sentinels {
 		for j, b := range sentinels {
 			if i != j {
-				assert.False(t, errors.Is(a, b),
+				assert.NotErrorIs(t, a, b,
 					"sentinels should be distinct: %v vs %v", a, b)
 			}
 		}
@@ -60,10 +59,10 @@ func TestNotFoundError(t *testing.T) {
 			err := NewNotFoundError(tt.entity, tt.id)
 
 			assert.Equal(t, tt.expectedMsg, err.Error())
-			assert.True(t, errors.Is(err, ErrNotFound))
+			require.ErrorIs(t, err, ErrNotFound)
 
 			var notFound *NotFoundError
-			require.True(t, errors.As(err, &notFound))
+			require.ErrorAs(t, err, &notFound)
 			assert.Equal(t, tt.entity, notFound.Entity)
 			assert.Equal(t, tt.id, notFound.ID)
 		})
@@ -74,7 +73,7 @@ func TestNotFoundError_Unwrap(t *testing.T) {
 	err := NewNotFoundError("user", "123")
 
 	var notFound *NotFoundError
-	require.True(t, errors.As(err, &notFound))
+	require.ErrorAs(t, err, &notFound)
 	assert.Equal(t, ErrNotFound, notFound.Unwrap())
 }
 
@@ -121,10 +120,10 @@ func TestConflictError(t *testing.T) {
 			}
 
 			assert.Equal(t, tt.expectedMsg, err.Error())
-			assert.True(t, errors.Is(err, ErrConflict))
+			require.ErrorIs(t, err, ErrConflict)
 
 			var conflict *ConflictError
-			require.True(t, errors.As(err, &conflict))
+			require.ErrorAs(t, err, &conflict)
 			assert.Equal(t, tt.entity, conflict.Entity)
 			assert.Equal(t, tt.reason, conflict.Reason)
 		})
@@ -135,7 +134,7 @@ func TestConflictError_Unwrap(t *testing.T) {
 	err := NewConflictError("order", "exists")
 
 	var conflict *ConflictError
-	require.True(t, errors.As(err, &conflict))
+	require.ErrorAs(t, err, &conflict)
 	assert.Equal(t, ErrConflict, conflict.Unwrap())
 }
 
@@ -165,10 +164,10 @@ func TestValidationError(t *testing.T) {
 			err := NewValidationError(tt.field, tt.message)
 
 			assert.Equal(t, tt.expectedMsg, err.Error())
-			assert.True(t, errors.Is(err, ErrValidation))
+			require.ErrorIs(t, err, ErrValidation)
 
 			var validation *ValidationError
-			require.True(t, errors.As(err, &validation))
+			require.ErrorAs(t, err, &validation)
 			assert.Equal(t, tt.field, validation.Field)
 			assert.Equal(t, tt.message, validation.Message)
 		})
@@ -179,7 +178,7 @@ func TestValidationError_Unwrap(t *testing.T) {
 	err := NewValidationError("field", "message")
 
 	var validation *ValidationError
-	require.True(t, errors.As(err, &validation))
+	require.ErrorAs(t, err, &validation)
 	assert.Equal(t, ErrValidation, validation.Unwrap())
 }
 
@@ -209,10 +208,10 @@ func TestForbiddenError(t *testing.T) {
 			err := NewForbiddenError(tt.operation, tt.reason)
 
 			assert.Equal(t, tt.expectedMsg, err.Error())
-			assert.True(t, errors.Is(err, ErrForbidden))
+			require.ErrorIs(t, err, ErrForbidden)
 
 			var forbidden *ForbiddenError
-			require.True(t, errors.As(err, &forbidden))
+			require.ErrorAs(t, err, &forbidden)
 			assert.Equal(t, tt.operation, forbidden.Operation)
 			assert.Equal(t, tt.reason, forbidden.Reason)
 		})
@@ -223,7 +222,7 @@ func TestForbiddenError_Unwrap(t *testing.T) {
 	err := NewForbiddenError("delete", "no access")
 
 	var forbidden *ForbiddenError
-	require.True(t, errors.As(err, &forbidden))
+	require.ErrorAs(t, err, &forbidden)
 	assert.Equal(t, ErrForbidden, forbidden.Unwrap())
 }
 
@@ -253,10 +252,10 @@ func TestUnavailableError(t *testing.T) {
 			err := NewUnavailableError(tt.service, tt.reason)
 
 			assert.Equal(t, tt.expectedMsg, err.Error())
-			assert.True(t, errors.Is(err, ErrUnavailable))
+			require.ErrorIs(t, err, ErrUnavailable)
 
 			var unavailable *UnavailableError
-			require.True(t, errors.As(err, &unavailable))
+			require.ErrorAs(t, err, &unavailable)
 			assert.Equal(t, tt.service, unavailable.Service)
 			assert.Equal(t, tt.reason, unavailable.Reason)
 		})
@@ -267,7 +266,7 @@ func TestUnavailableError_Unwrap(t *testing.T) {
 	err := NewUnavailableError("db", "timeout")
 
 	var unavailable *UnavailableError
-	require.True(t, errors.As(err, &unavailable))
+	require.ErrorAs(t, err, &unavailable)
 	assert.Equal(t, ErrUnavailable, unavailable.Unwrap())
 }
 
@@ -331,7 +330,7 @@ func TestErrorWrappingChain(t *testing.T) {
 		assert.True(t, IsNotFound(wrapped3))
 
 		var notFound *NotFoundError
-		require.True(t, errors.As(wrapped3, &notFound))
+		require.ErrorAs(t, wrapped3, &notFound)
 		assert.Equal(t, "123", notFound.ID)
 		assert.Equal(t, "user", notFound.Entity)
 	})
@@ -343,7 +342,7 @@ func TestErrorWrappingChain(t *testing.T) {
 		assert.True(t, IsConflict(wrapped))
 
 		var conflict *ConflictError
-		require.True(t, errors.As(wrapped, &conflict))
+		require.ErrorAs(t, wrapped, &conflict)
 		assert.Equal(t, "v2", conflict.Details)
 	})
 
@@ -354,7 +353,7 @@ func TestErrorWrappingChain(t *testing.T) {
 		assert.True(t, IsValidation(wrapped))
 
 		var validation *ValidationError
-		require.True(t, errors.As(wrapped, &validation))
+		require.ErrorAs(t, wrapped, &validation)
 		assert.Equal(t, "email", validation.Field)
 	})
 
@@ -365,7 +364,7 @@ func TestErrorWrappingChain(t *testing.T) {
 		assert.True(t, IsForbidden(wrapped))
 
 		var forbidden *ForbiddenError
-		require.True(t, errors.As(wrapped, &forbidden))
+		require.ErrorAs(t, wrapped, &forbidden)
 		assert.Equal(t, "admin only", forbidden.Reason)
 	})
 
@@ -376,7 +375,7 @@ func TestErrorWrappingChain(t *testing.T) {
 		assert.True(t, IsUnavailable(wrapped))
 
 		var unavailable *UnavailableError
-		require.True(t, errors.As(wrapped, &unavailable))
+		require.ErrorAs(t, wrapped, &unavailable)
 		assert.Equal(t, "redis", unavailable.Service)
 	})
 }

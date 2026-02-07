@@ -437,7 +437,7 @@ func TestPaginationRequestDecodeCursor(t *testing.T) {
 			got, err := p.DecodeCursor()
 
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
 				assert.Nil(t, got)
 			} else {
 				require.NoError(t, err)
@@ -631,7 +631,7 @@ func TestDecodeCursor(t *testing.T) {
 			got, err := DecodeCursor(tt.encoded)
 
 			if tt.wantErr != nil {
-				assert.ErrorIs(t, err, tt.wantErr)
+				require.ErrorIs(t, err, tt.wantErr)
 				assert.Nil(t, got)
 			} else {
 				require.NoError(t, err)
@@ -761,10 +761,10 @@ func TestValidate(t *testing.T) {
 			err := Validate(tt.input)
 
 			if tt.wantErr {
-				assert.Error(t, err)
-				assert.ErrorIs(t, err, ErrValidation)
+				require.Error(t, err)
+				require.ErrorIs(t, err, ErrValidation)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -824,12 +824,12 @@ func TestBindAndValidate(t *testing.T) {
 			err := BindAndValidate(c, &input)
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				if tt.errType != nil {
-					assert.ErrorIs(t, err, tt.errType)
+					require.ErrorIs(t, err, tt.errType)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, "John", input.Name)
 				assert.Equal(t, "john@example.com", input.Email)
 			}
@@ -884,12 +884,12 @@ func TestBindQueryAndValidate(t *testing.T) {
 			err := BindQueryAndValidate(c, &input)
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				if tt.errType != nil {
-					assert.ErrorIs(t, err, tt.errType)
+					require.ErrorIs(t, err, tt.errType)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -1025,7 +1025,7 @@ func TestValidationMessage(t *testing.T) {
 	require.Error(t, err)
 
 	var validationErrs validator.ValidationErrors
-	require.True(t, errors.As(err, &validationErrs))
+	require.ErrorAs(t, err, &validationErrs)
 
 	// Map expected messages for each field
 	expectedMessages := map[string]string{
@@ -1258,12 +1258,12 @@ func TestValidateAll(t *testing.T) {
 			err := ValidateAll(tt.input)
 
 			if tt.wantErr {
-				assert.Error(t, err)
+				require.Error(t, err)
 				if tt.errType != nil {
-					assert.ErrorIs(t, err, tt.errType)
+					require.ErrorIs(t, err, tt.errType)
 				}
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -1349,7 +1349,7 @@ func TestValidationMessageUnknownTag(t *testing.T) {
 	require.Error(t, err)
 
 	var validationErrs validator.ValidationErrors
-	require.True(t, errors.As(err, &validationErrs))
+	require.ErrorAs(t, err, &validationErrs)
 
 	for _, fe := range validationErrs {
 		msg := validationMessage(fe)

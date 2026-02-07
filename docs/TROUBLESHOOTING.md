@@ -987,7 +987,7 @@ telnet <component-host> <port>
    task run
 
    # Terminal 2: Run integration tests
-   task test:integration
+   task test:integration:smoke
    ```
 
 2. **Check service health:**
@@ -999,7 +999,7 @@ telnet <component-host> <port>
 3. **Run specific scenario by tag:**
 
    ```bash
-   GODOG_TAGS="@specific-tag" task test:integration
+   GODOG_TAGS="@specific-tag" task test:integration:smoke
    ```
 
 4. **Run all integration tests (not just smoke):**
@@ -1012,7 +1012,7 @@ telnet <component-host> <port>
 
    ```bash
    # Override base URL if service is on different port
-   BASE_URL=http://localhost:9090 task test:integration
+   BASE_URL=http://localhost:9090 task test:integration:smoke
    ```
 
 ---

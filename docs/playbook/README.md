@@ -31,7 +31,7 @@ Step-by-step how-to guides for common development tasks in this service template
 ```bash
 task run               # Run service with hot reload
 task test              # Run unit tests
-task test:integration  # Run BDD integration tests
+task test:integration:smoke  # Run BDD integration tests (smoke)
 task test:benchmark    # Run Go benchmarks
 task test:load         # Run k6 load tests
 task generate          # Regenerate mocks
