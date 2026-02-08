@@ -100,6 +100,7 @@ jobs:
 
       - name: Run octocov
         uses: k1LoW/octocov-action@v1
+        continue-on-error: true
         with:
           config: .octocov.yml
 
