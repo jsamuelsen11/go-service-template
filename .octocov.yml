@@ -33,9 +33,6 @@ diff:
   enable: true
   if: is_pull_request
 
-# Push coverage report and badge to central repository branch
-# Badge will be available at: https://raw.githubusercontent.com/{owner}/{repo}/octocov/badge.svg
-push:
-  enable: true
-  if: is_default_branch
-  branch: octocov
+# Coverage badge is pushed to the 'octocov' branch by CI workflow steps
+# (octocov's built-in push doesn't support pushing to a different branch)
+# Badge URL: https://raw.githubusercontent.com/{owner}/{repo}/octocov/badge.svg
