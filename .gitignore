@@ -17,6 +17,9 @@ bin/
 coverage.*
 *.coverprofile
 profile.cov
+*.prof
+benchmark.out
+deps.svg
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
