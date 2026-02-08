@@ -1,7 +1,7 @@
 # Go Service Template
 
-[![CI](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/jsamuelsen/go-service-template/actions/workflows/ci.yaml)
-[![Coverage](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/badge.svg)](https://raw.githubusercontent.com/jsamuelsen/go-service-template/octocov/report.json)
+[![CI](https://github.com/jsamuelsen11/go-service-template/actions/workflows/ci.yaml/badge.svg)](https://github.com/jsamuelsen11/go-service-template/actions/workflows/ci.yaml)
+[![Coverage](https://raw.githubusercontent.com/jsamuelsen11/go-service-template/octocov/badge.svg)](https://raw.githubusercontent.com/jsamuelsen11/go-service-template/octocov/report.json)
 [![Go Version](https://img.shields.io/badge/Go-1.25.7-00ADD8?logo=go)](https://go.dev/)
 
 Enterprise-grade Go backend service template implementing Clean/Hexagonal Architecture.
@@ -80,7 +80,7 @@ brew install go-task
 ### Setup
 
 ```bash
-git clone https://github.com/jsamuelsen/go-service-template.git
+git clone https://github.com/jsamuelsen11/go-service-template.git
 cd go-service-template
 task setup
 ```
