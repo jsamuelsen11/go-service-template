@@ -54,7 +54,7 @@ tasks:
         printf "  ${GREEN}task test:integration:report${RESET} Generate JSON integration report\n"
         printf "  ${GREEN}task test:benchmark${RESET}         Run Go benchmarks\n"
         printf "  ${GREEN}task test:benchmark:save${RESET}    Save benchmark results for comparison\n"
-        printf "  ${GREEN}task test:benchmark:compare${RESET}  Compare benchmark runs (benchstat)\n"
+        printf "  ${GREEN}task test:benchmark:compare${RESET}  Compare two benchmark runs (benchstat)\n"
         printf "  ${GREEN}task profile:cpu${RESET}             CPU profile via benchmarks\n"
         printf "  ${GREEN}task profile:mem${RESET}             Memory profile via benchmarks\n"
         printf "  ${GREEN}task test:load${RESET}              Run k6 load tests\n"
@@ -92,6 +92,10 @@ tasks:
         printf "  ${DIM}TEST_FORMAT=dots${RESET}              Change test output (dots|pkgname|standard-verbose)\n"
         printf "  ${DIM}BASE_REF=origin/develop${RESET}       Override OpenAPI diff base branch\n"
         printf "  ${DIM}HOST_PORT=9090${RESET}                Override docker:run host port (default: 8080)\n"
+        printf "  ${DIM}BENCH_COUNT=20${RESET}                Override benchmark iteration count (default: 10)\n"
+        printf "  ${DIM}BENCH_FILE=before.out${RESET}         Override benchmark output file (default: benchmark.out)\n"
+        printf "  ${DIM}PPROF_PORT=9090${RESET}               Override pprof web UI port (default: 8081)\n"
+        printf "  ${DIM}DOCS_PORT=8080${RESET}                Override pkgsite docs port (default: 6060)\n"
         printf "\n"
         printf "${CYAN}Examples:${RESET}\n"
         printf "  ${DIM}task run${RESET}                      Start dev server with hot reload\n"
@@ -152,7 +156,7 @@ tasks:
     cmds:
       - rm -rf bin/
       - rm -f {{.COVERAGE_FILE}} coverage.html
-      - rm -f *.prof benchmark.out deps.svg
+      - rm -f cpu.prof mem.prof benchmark.out deps.svg
 
   # ─────────────────────────────────────────────────────────────
   # Code Quality
@@ -240,28 +244,37 @@ tasks:
 
   test:benchmark:save:
     desc: Run benchmarks and save results to file
+    vars:
+      BENCH_COUNT: '{{.BENCH_COUNT | default "10"}}'
+      BENCH_FILE: '{{.BENCH_FILE | default "benchmark.out"}}'
     cmds:
-      - go test -bench=. -benchmem -count=10 ./test/benchmark/... | tee benchmark.out
+      - go test -bench=. -benchmem -count={{.BENCH_COUNT}} ./test/benchmark/... | tee {{.BENCH_FILE}}
 
   test:benchmark:compare:
-    desc: "Compare benchmark results (usage: task test:benchmark:compare -- old.out new.out)"
+    desc: "Compare two benchmark runs (usage: task test:benchmark:compare -- old.out new.out)"
     preconditions:
-      - sh: '[ -n "{{.CLI_ARGS}}" ]'
+      - sh: |
+          set -- {{.CLI_ARGS}}
+          [ "$#" -eq 2 ]
         msg: "Usage: task test:benchmark:compare -- old.out new.out"
     cmds:
       - go tool benchstat {{.CLI_ARGS}}
 
   profile:cpu:
     desc: Run benchmarks with CPU profiling
+    vars:
+      PPROF_PORT: '{{.PPROF_PORT | default "8081"}}'
     cmds:
       - go test -bench=. -cpuprofile=cpu.prof -benchmem ./test/benchmark/...
-      - cmd: echo "View profile with go tool pprof -http=:8081 cpu.prof"
+      - cmd: 'echo "View profile: go tool pprof -http=:{{.PPROF_PORT}} cpu.prof"'
 
   profile:mem:
     desc: Run benchmarks with memory profiling
+    vars:
+      PPROF_PORT: '{{.PPROF_PORT | default "8081"}}'
     cmds:
       - go test -bench=. -memprofile=mem.prof -benchmem ./test/benchmark/...
-      - cmd: echo "View profile with go tool pprof -http=:8081 mem.prof"
+      - cmd: 'echo "View profile: go tool pprof -http=:{{.PPROF_PORT}} mem.prof"'
 
   test:load:
     desc: Run k6 load tests (requires running service)
@@ -302,9 +315,11 @@ tasks:
 
   docs:
     desc: Start local documentation server (pkgsite)
+    vars:
+      DOCS_PORT: '{{.DOCS_PORT | default "6060"}}'
     cmds:
-      - cmd: echo "Serving docs at http://localhost:6060"
-      - go tool pkgsite -http=:6060
+      - cmd: 'echo "Serving docs at http://localhost:{{.DOCS_PORT}}"'
+      - go tool pkgsite -http=:{{.DOCS_PORT}}
 
   deps:graph:
     desc: Visualize module dependency graph (requires graphviz)
