@@ -56,9 +56,9 @@ FROM gcr.io/distroless/static-debian12:nonroot AS production
 # OCI Image Spec labels
 LABEL org.opencontainers.image.title="go-service-template" \
       org.opencontainers.image.description="Enterprise-grade Go backend service template" \
-      org.opencontainers.image.url="https://github.com/jsamuelsen/go-service-template" \
-      org.opencontainers.image.source="https://github.com/jsamuelsen/go-service-template" \
-      org.opencontainers.image.vendor="jsamuelsen" \
+      org.opencontainers.image.url="https://github.com/jsamuelsen11/go-service-template" \
+      org.opencontainers.image.source="https://github.com/jsamuelsen11/go-service-template" \
+      org.opencontainers.image.vendor="jsamuelsen11" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.base.name="gcr.io/distroless/static-debian12:nonroot"
 
