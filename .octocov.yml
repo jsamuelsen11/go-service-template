@@ -5,6 +5,8 @@ coverage:
   # Path to the Go coverage profile
   paths:
     - coverage.out
+  badge:
+    path: badge.svg
 
 # Code-to-test ratio metrics
 codeToTestRatio:
