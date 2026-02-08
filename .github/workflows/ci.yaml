@@ -100,9 +100,57 @@ jobs:
 
       - name: Run octocov
         uses: k1LoW/octocov-action@v1
-        continue-on-error: true
         with:
           config: .octocov.yml
+
+      - name: Push badge to octocov branch
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -f badge.svg ]; then
+            echo "::warning::badge.svg not found, skipping push"
+            exit 0
+          fi
+
+          REPO="${{ github.repository }}"
+          BRANCH="octocov"
+
+          # Create orphan branch if it doesn't exist
+          if ! gh api "repos/${REPO}/git/ref/heads/${BRANCH}" >/dev/null 2>&1; then
+            echo "Creating ${BRANCH} branch..."
+            DEFAULT_SHA=$(gh api "repos/${REPO}/git/ref/heads/main" --jq '.object.sha')
+            gh api "repos/${REPO}/git/refs" \
+              --method POST \
+              -f ref="refs/heads/${BRANCH}" \
+              -f sha="$DEFAULT_SHA"
+          fi
+
+          push_file() {
+            local file=$1
+            [ -f "$file" ] || return 0
+
+            local content sha payload
+            content=$(base64 -w 0 "$file")
+            sha=$(gh api "repos/${REPO}/contents/${file}?ref=${BRANCH}" \
+              --jq '.sha' 2>/dev/null || echo "")
+
+            payload=$(jq -n \
+              --arg message "update coverage ${file}" \
+              --arg content "$content" \
+              --arg branch "$BRANCH" \
+              --arg sha "$sha" \
+              '{message: $message, content: $content, branch: $branch} +
+               (if $sha != "" then {sha: $sha} else {} end)')
+
+            gh api "repos/${REPO}/contents/${file}" \
+              --method PUT \
+              --input - <<< "$payload"
+            echo "Pushed ${file} to ${BRANCH} branch"
+          }
+
+          push_file badge.svg
+          push_file report.json
 
   openapi:
     name: OpenAPI Validation
