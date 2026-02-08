@@ -167,7 +167,7 @@ jobs:
         run: go mod download
 
       - name: Install Syft
-        uses: anchore/sbom-action/download-syft@v0.17.0
+        uses: anchore/sbom-action/download-syft@v0.22.2
 
       - name: Generate Go module SBOM (CycloneDX)
         run: syft . -o cyclonedx-json=sbom-go.cdx.json
